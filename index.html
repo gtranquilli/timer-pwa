@@ -137,7 +137,7 @@
     </div>
 
     <div class="row" style="margin-top:10px">
-      <div><label>Voce guida</label><select id="voice-toggle"><option value="off">Spenta</option><option value="on">Accesa</option></select></div>
+      <div><label>Voce guida</label><select id="voice-toggle"><option value="off">Spenta</option><option value="on" selected>Accesa</option></select></div>
       <div><label>Volume beep</label><input type="range" id="beep-volume" min="0" max="100" value="70"></div>
     </div>
 
@@ -213,40 +213,73 @@ $('#tab-catalog').addEventListener('click', ()=>{
   $('#timer-card').style.display='none'; $('#catalog').style.display='';
 });
 
-/* Speech robusto */
+/* Speech robusto (fix iOS: warmup + voce it-IT) */
 const Speech = (() => {
-  let ready = false;
-  let queue = [];
-  let countdownTimer = null;
+  let ready = false, queue = [], countdownTimer = null, selectedVoice = null;
+  const preferredLang = 'it-IT';
+
+  function pickVoice(){
+    try {
+      const voices = speechSynthesis.getVoices();
+      selectedVoice =
+        voices.find(v => v.lang?.toLowerCase().startsWith('it') && v.localService) ||
+        voices.find(v => v.lang?.toLowerCase().startsWith('it')) ||
+        voices[0] || null;
+    } catch(e) {}
+  }
+
   function init() {
     if (ready) return;
-    const onInteract = () => { ready = true; try { speechSynthesis.cancel(); } catch(e) {} drain(); };
+    const warmup = () => {
+      ready = true;
+      try { speechSynthesis.cancel(); } catch(e) {}
+      try {
+        pickVoice();
+        // sblocco iOS: utterance a basso volume
+        const u = new SpeechSynthesisUtterance('ok');
+        u.lang = selectedVoice?.lang || preferredLang;
+        if (selectedVoice) u.voice = selectedVoice;
+        u.volume = 0.01; u.rate = 1.0;
+        speechSynthesis.speak(u);
+      } catch(e) {}
+      drain();
+    };
     ['click','keydown','touchstart'].forEach(ev =>
-      window.addEventListener(ev, onInteract, { once:true, passive:true })
+      window.addEventListener(ev, warmup, { once:true, passive:true })
     );
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.addEventListener?.('voiceschanged', pickVoice);
+      pickVoice();
+    }
   }
+
   function say(text) {
     const toggle = document.querySelector('#voice-toggle');
     if (toggle && toggle.value !== 'on') return;
     if (!('speechSynthesis' in window)) return;
     const u = new SpeechSynthesisUtterance(String(text));
-    u.rate = 1.02; u.pitch = 1.0;
+    if (selectedVoice) u.voice = selectedVoice;
+    u.lang = selectedVoice?.lang || preferredLang;
+    u.rate = 1.02; u.pitch = 1.0; u.volume = 1.0;
     u.onend = () => drain();
     queue.push(u);
     if (ready) drain();
   }
-  function drain(){ if (!queue.length || speechSynthesis.speaking) return; try{ speechSynthesis.speak(queue.shift()); }catch(e){} }
+
+  function drain(){ if (!queue.length || speechSynthesis.speaking) return;
+    try { speechSynthesis.speak(queue.shift()); } catch(e){} }
+
   function stop(){ queue=[]; clearCountdown(); try{ speechSynthesis.cancel(); }catch(e){} }
   function clearCountdown(){ if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; } }
+
   function countdown(sec=3){
-    clearCountdown(); ensureAudio();
+    clearCountdown();
     let n=sec;
     say(String(n)); beep(880,90); n--;
-    countdownTimer=setInterval(()=>{
-      if(n<=0){ clearCountdown(); return; }
-      say(String(n)); beep(880,90); n--;
-    },1000);
+    countdownTimer=setInterval(()=>{ if(n<=0){ clearCountdown(); return; }
+      say(String(n)); beep(880,90); n--; },1000);
   }
+
   init();
   return { say, stop, countdown, clearCountdown };
 })();
@@ -260,6 +293,112 @@ function beep(freq=880, dur=140, type='sine'){ ensureAudio(); const osc = audioC
 $('#beep-volume').addEventListener('input', e=>{ ensureAudio(); masterGain.gain.value = e.target.value/100; });
 
 /* Media helpers */
+/* === Slideshow helpers (multi-image per esercizio) === */
+const SLIDESHOW = { timer:null, idx:0, list:[], interval:2500 };// 2.5s
+const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
+const VID_EXT = /\.(mp4|webm|mov)$/i;
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const COUNTDOWN_T = IS_IOS ? 3.6 : 3.1; // un filo prima su iOS
+
+
+function isImageUrl(u){ return IMG_EXT.test(u||""); }
+function isVideoUrl(u){ return /\.mp4$/i.test(u||""); } // preferiamo mp4 per compatibilità
+
+function preloadExerciseImages(ex, max=2){
+  if(!ex) return;
+  const list = [];
+  if (Array.isArray(ex.media)) list.push(...ex.media.filter(isImageUrl));
+  if (ex.mediaUrl && isImageUrl(ex.mediaUrl)) list.push(ex.mediaUrl);
+
+  // pre-carica le prime immagini note
+  list.slice(0, max).forEach(preloadImage);
+
+  // se il primo file è ..._1.webp/jpg, prova a pre-caricare _2, _3
+  const m = list[0]?.match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
+  if (m){
+    const base = m[1], start = parseInt(m[2],10), ext = m[3].toLowerCase();
+    for(let n=1; n<=max; n++){
+      preloadImage(`${base}_${start+n}.${ext}`);
+    }
+  }
+}
+
+function stopSlideshow(){
+  if(SLIDESHOW.timer){ clearInterval(SLIDESHOW.timer); SLIDESHOW.timer=null; }
+  SLIDESHOW.idx=0; SLIDESHOW.list=[];
+}
+
+function startImageSlideshow(list){
+  stopSlideshow();
+  if(!list || !list.length) return;
+  SLIDESHOW.list = list.slice();
+  SLIDESHOW.idx = 0;
+  showImage(SLIDESHOW.list[SLIDESHOW.idx]);
+  SLIDESHOW.timer = setInterval(()=>{
+    if(!SLIDESHOW.list.length) return;
+    SLIDESHOW.idx = (SLIDESHOW.idx+1) % SLIDESHOW.list.length;
+    showImage(SLIDESHOW.list[SLIDESHOW.idx]);
+  }, SLIDESHOW.interval);
+}
+
+function expandNumberedSeries(seedUrl){
+  // se il seed finisce con _N.webp/jpg, completa la serie finché i file esistono
+  const m = (seedUrl||"").match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
+  if(!m) return;
+  const base = m[1], ext = m[3].toLowerCase();
+  const max = 16;
+  for(let n=1; n<=max; n++){
+    const candidate = `${base}_${n}.${ext}`;
+    // evita duplicati e verifica esistenza con preload
+    if(SLIDESHOW.list.includes(candidate)) continue;
+    const im = new Image();
+    im.onload = ()=>{ if(!SLIDESHOW.list.includes(candidate)) SLIDESHOW.list.push(candidate); };
+    im.onerror = ()=>{};
+    im.src = candidate;
+  }
+}
+
+// Mostra una "sequenza" per un esercizio: video singolo o slideshow immagini.
+// opts: { rotate: boolean } -> se false, mostra solo la prima immagine
+function showExerciseMedia(ex, badge='', opts={}){
+  stopSlideshow();
+  mediaEl.badge.textContent = badge || '';
+  const rotate = opts.rotate !== false;
+  const prefer = opts.prefer || 'auto';
+  if (!ex){ showMedia(null, badge); return; }
+
+  // costruisci lista dai campi "media" (array) o "mediaUrl" (singolo)
+  const list = [];
+  if (Array.isArray(ex.media)) list.push(...ex.media);
+  if (ex.mediaUrl) list.push(ex.mediaUrl);
+
+  const videos = list.filter(u => isVideoUrl(u));
+  let images   = list.filter(u => isImageUrl(u));
+  if (!images.length && ex.mediaUrl && isImageUrl(ex.mediaUrl)) images = [ex.mediaUrl];
+
+  function showImages(arr){
+    if (!arr || !arr.length){ showMedia(null, badge); return; }
+    // se l'immagine ha suffisso _1.webp, prova ad espandere in _2, _3, ...
+    if (/_\d+\.(webp|png|jpe?g)$/i.test(arr[0])) {
+      SLIDESHOW.list = arr.slice();
+      if (rotate) startImageSlideshow(SLIDESHOW.list); else showImage(arr[0]);
+      expandNumberedSeries(arr[0]);
+    } else {
+      if (rotate && arr.length > 1) startImageSlideshow(arr);
+      else showImage(arr[0]);
+    }
+  }
+
+  // preferenze per modalità
+  if (prefer === 'video'  && videos.length){ showVideo(videos[0]); return; }
+  if (prefer === 'images' && images.length){ showImages(images);  return; }
+
+  // fallback
+  if (videos.length){ showVideo(videos[0]); return; }
+  if (images.length){ showImages(images);   return; }
+  showMedia(null, badge);
+}
+
 const mediaEl={box:$('#media'),img:$('#media-img'),vid:$('#media-video'),badge:$('#media-badge'),next:$('#media-next')};
 function showImage(src){ mediaEl.vid.pause(); mediaEl.vid.removeAttribute('src'); mediaEl.vid.style.display='none'; mediaEl.img.src=src; mediaEl.img.style.display='block'; }
 function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
@@ -335,7 +474,7 @@ class IntervalController{
       else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); }
     }
     // Countdown SOLO nel recupero
-    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
 }
@@ -345,10 +484,25 @@ class CircuitController{
   get curr(){ return activeExercises[this.ex-1] || null; }
   get nextEx(){ const nx=(this.ex < this.exercises)?(this.ex+1):1; return activeExercises[nx-1] || null; }
   renderMedia(){
-    if (this.mode==='work'){ showMedia(this.curr,'Lavoro'); setNextName(this.nextEx?.name||'—'); preloadImage(this.nextEx?.mediaUrl); }
-    else if (this.mode==='rest'){ showMedia(this.nextEx,'Recupero'); setNextName(this.nextEx?.name||'—'); preloadImage(this.curr?.mediaUrl); }
-    else { showMedia(null); setNextName('—'); }
+  if (this.mode==='work'){
+    // WORK: slideshow immagini (se disponibili). Se non ci sono immagini, fallback automatico.
+    showExerciseMedia(this.curr, 'Lavoro', { rotate:true,  prefer:'images' });
+    setNextName(this.nextEx?.name || '—');
+    preloadExerciseImages(this.nextEx, 1);
   }
+  else if (this.mode==='rest'){
+    // REST: video se c’è; poi pre-carica le immagini del prossimo esercizio per lo slideshow del work
+  showExerciseMedia(this.nextEx, 'Recupero', { rotate:false, prefer:'video' });
+  setNextName(this.nextEx?.name || '—');
+  preloadExerciseImages(this.nextEx, 2); // <-- richiede l’helper
+  }
+  else {
+    stopSlideshow();
+    showMedia(null);
+    setNextName('—');
+  }
+}
+
   reset(){ this.mode='work'; this.t=this.work; this.ex=1; this.round=1; this.didCountdown=false; resetClock();
     $('#session-state').textContent='Circuito'; $('#round-state').textContent=`${this.round}/${this.rounds}`;
     $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t);
@@ -366,12 +520,12 @@ class CircuitController{
             if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); this.renderMedia(); }
             else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); this.renderMedia(); }
             $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`;
-          } else { running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; showMedia(null); setNextName('—'); }
+          } else { running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; stopSlideshow(); showMedia(null); setNextName('—'); }
         }
       } else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); this.renderMedia(); }
     }
     // Countdown SOLO nel recupero
-    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
 }

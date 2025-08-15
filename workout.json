@@ -48,7 +48,7 @@
       "exercises": [
         {
           "name": "Step up su gradino o scalino",
-          "mediaUrl": "media/step_up.mp4"
+          "mediaUrl": ["media/step_up.mp4","media/step_up_1.webp", "media/step_up_2.webp", "media/step_up_3.webp", "media/step_up_4.webp"]
         },
         {
           "name": "Slanci posteriori in quadrupedia",
@@ -56,7 +56,7 @@
         },
         {
           "name": "Punch frontali con manubri leggeri",
-          "mediaUrl": "media/punch_frontali.mp4"
+          "mediaUrl": ["media/punch_frontali.mp4","media/punch_frontali_1.webp", "media/punch_frontali_2.webp"]
         },
         {
           "name": "Side step con touch a terra",
@@ -81,15 +81,15 @@
       "exercises": [
         {
           "name": "Ponte glutei con cavigliere",
-          "mediaUrl": "media/ponte_glutei_singolo.mp4"
+          "mediaUrl": ["media/ponte_glutei_singolo.mp4", "media/ponte_glutei_singolo_1.webp", "media/ponte_glutei_singolo_2.webp"]
         },
         {
           "name": "Slanci laterali in piedi (con supporto)",
-          "mediaUrl": "media/slanci_laterali_1.webp"
+          "mediaUrl": ["media/slanci_laterali_1.webp", "media/slanci_laterali_2.mp4"]
         },
         {
           "name": "Affondi indietro statici (con supporto)",
-          "mediaUrl": "media/affondi_indietro_1.mp4"
+          "mediaUrl": ["media/affondi_indietro_1.mp4", "media/affondi_indietro_2.mp4","media/affondi_indietro_1.webp", "media/affondi_indietro_2.webp"]
         },
         {
           "name": "Russian Twist senza peso",
@@ -114,11 +114,7 @@
         },
         {
           "name": "Stretching glutei (seduto, gamba piegata)",
-          "mediaUrl": "media/stretch_glutei_1.webp"
-        },
-        {
-          "name": "Stretching glutei (seduto, gamba piegata)",
-          "mediaUrl": "media/stretch_glutei_2.webp"
+          "mediaUrl": ["media/stretch_glutei_1.webp", "media/stretch_glutei_2.webp"]
         },
         {
           "name": "Estensione schiena (cobra)",
@@ -130,23 +126,11 @@
         },
         {
           "name": "Stretching collo e spalle (variante)",
-          "mediaUrl": "media/stretch_spalle_1.webp"
-        },
-        {
-          "name": "Stretching collo e spalle (variante)",
-          "mediaUrl": "media/stretch_spalle_2.webp"
-        },
-        {
-          "name": "Stretching collo e spalle (variante)",
-          "mediaUrl": "media/stretch_spalle_4.webp"
-        },
-        {
-          "name": "Stretching collo e spalle (variante)",
-          "mediaUrl": "media/stretch_spalle_5.webp"
+          "mediaUrl": ["media/stretch_spalle_1.webp", "media/stretch_spalle_2.webp", "media/stretch_spalle_4.webp", "media/stretch_spalle_5.webp"]
         },
         {
           "name": "Respirazione diaframmatica (supina, mani sulla pancia)",
-          "mediaUrl": "media/stretch_.webp"
+          "mediaUrl": "media/placeholder.png"
         }
       ]
     },
