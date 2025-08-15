@@ -456,25 +456,38 @@ class IntervalController{
   constructor(cfg){ this.work=+cfg.work; this.rest=+cfg.rest; this.stations=+cfg.stations; this.rounds=+cfg.rounds; this.br=+cfg.betweenRounds; this.reset(); }
   reset(){ this.mode='work'; this.t=this.work; this.station=1; this.round=1; this.done=false; this.didCountdown=false; resetClock();
     $('#session-state').textContent='HIIT Intervalli'; $('#round-state').textContent=`${this.round}/${this.rounds}`; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
-    $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; showMedia(null); setNextName('—'); }
-  update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
+    $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; showMedia(null); setNextName('—'); 
+  }
+
+  update(){ if(!running) return;
+    this.t-=0.1;
+    $('#display').textContent=fmt(this.t);
+    const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-    if(this.t<=0){
-      if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; beep(880,120); }
-      else if(this.mode==='rest'){
-        if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
-        else{
-          if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-            if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
-            else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); }
-            $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
-          } else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; }
-        }
-      }
-      else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); }
+
+    // --- Countdown PRIMA delle transizioni ---
+    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t>0 && this.t<=COUNTDOWN_T){
+      this.didCountdown = true;
+      Speech.countdown(3);
     }
-    // Countdown SOLO nel recupero
-    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
+    
+
+    if(this.t<=0){
+
+        if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; beep(880,120); }
+        else if(this.mode==='rest'){
+          if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
+          else{
+            if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
+              if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
+              else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); }
+              $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
+            } else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; }
+          }
+        }
+        else if(this.mode==='between')
+        { this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); }
+    }
   }
   next(){ this.t = 0.01; }
 }
@@ -508,8 +521,16 @@ class CircuitController{
     $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t);
     this.renderMedia();
   }
-  update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
+  update(){ if(!running) return;
+    this.t-=0.1;
+    $('#display').textContent=fmt(this.t);
+    const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
+
+    // --- Countdown PRIMA delle transizioni ---
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
+
+
     if(this.t<=0){
       if(this.mode==='work'){
         this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.nextEx) Speech.say(`Prossimo: ${this.nextEx.name}`); this.didCountdown=false; beep(880,120); this.renderMedia();
@@ -524,8 +545,6 @@ class CircuitController{
         }
       } else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); this.renderMedia(); }
     }
-    // Countdown SOLO nel recupero
-    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
 }
@@ -535,20 +554,27 @@ class SetsController{
   reset(){ this.current=1; this.mode=this.work>0 && this.advance==='auto' ? 'work' : 'idle'; this.t=this.mode==='work'?this.work:0; this.didCountdown=false; resetClock();
     $('#session-state').textContent='Set/Serie'; $('#round-state').textContent=`—`; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
     $('#status').textContent = this.mode==='work' ? 'Lavoro' : 'Pronto'; $('#display').textContent= fmt(this.t); showMedia(null); setNextName('—'); }
-  update(){ if(!running) return; if(this.mode==='idle') return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?Math.max(1,this.work):Math.max(1,this.rest);
+  update(){ if(!running) return;
+    if(this.mode==='idle') return;
+    this.t-=0.1;
+    $('#display').textContent=fmt(this.t);
+    const max=(this.mode==='work')?Math.max(1,this.work):Math.max(1,this.rest);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-    if(this.t<=0){
-      if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
-      else if(this.mode==='rest'){
-        if(this.current<this.sets){
-          this.current++; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
-          if(this.advance==='auto' && this.work>0){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai'); beep(1200,120); }
-          else { this.mode='idle'; running=false; $('#status').textContent='Pronto (avanza manualmente)'; Speech.say('Pronto'); beep(1200,120); }
-        } else { running=false; beep(1000,200); beep(1200,200); Speech.say('Esercizio completato'); $('#status').textContent='Completato'; }
-      }
-    }
-    // Countdown SOLO nel recupero
+
+    // --- Countdown PRIMA delle transizioni ---
     if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+
+    if(this.t<=0){
+        if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
+        else if(this.mode==='rest'){
+          if(this.current<this.sets){
+            this.current++; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
+            if(this.advance==='auto' && this.work>0){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai'); beep(1200,120); }
+            else { this.mode='idle'; running=false; $('#status').textContent='Pronto (avanza manualmente)'; Speech.say('Pronto'); beep(1200,120); }
+          } else { running=false; beep(1000,200); beep(1200,200); Speech.say('Esercizio completato'); $('#status').textContent='Completato'; }
+        }
+      }
+      
   }
   next(){ ensureAudio(); if(this.mode==='idle'){ this.mode=(this.advance==='auto' && this.work>0)?'work':'rest'; this.t=this.mode==='work'?this.work:this.rest;
       if(this.mode==='work'){ $('#status').textContent='Lavoro'; Speech.say('Vai'); } else { $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; } start();
