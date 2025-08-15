@@ -309,17 +309,70 @@ class IntervalController{
     $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
+
     // Countdown per rest e work
     if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
       this.didCountdown=true; Speech.countdown(3);
     }
-    if(this.t<=0){ if(this.mode==='work'){ beep(880,120); Speech.say('Recupero'); const nextStation=(this.station < this.stations)?(this.station+1):1; Speech.say(`Prossimo: stazione ${nextStation}`); this.didCountdown=false; this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; }
-      else if(this.mode==='rest'){ if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
-        else { if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-          if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
-          else { this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); } $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; }
-          else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; } } }
-      else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); } }
+
+    if(this.t<=0){ 
+      if(this.mode==='work'){ 
+        this.mode='rest'; 
+        this.t=this.rest; 
+        $('#status').textContent='Recupero'; 
+        Speech.say('Recupero'); 
+        const nextStation=(this.station < this.stations)?(this.station+1):1; 
+        Speech.say(`Prossimo: stazione ${nextStation}`); 
+        this.didCountdown=false; 
+        beep(880,120); 
+      }
+      else if(this.mode==='rest'){ 
+        if(this.station<this.stations){ 
+          this.station++; 
+          this.mode='work'; 
+          this.t=this.work; 
+          $('#status').textContent='Lavoro'; 
+          $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; 
+          beep(1200,120); 
+        }
+        else { 
+          if(this.round<this.rounds){ 
+            this.round++; 
+            this.station=1; 
+            $('#round-state').textContent=`${this.round}/${this.rounds}`;
+            if(this.br>0){ 
+              this.mode='between'; 
+              this.t=this.br; 
+              $('#status').textContent='Recupero tra giri'; 
+              Speech.say('Recupero tra giri'); 
+              beep(600,150); 
+            }
+            else { 
+              this.mode='work'; 
+              this.t=this.work; 
+              $('#status').textContent='Lavoro'; 
+              beep(1200,120); 
+            } 
+            $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; 
+          }
+          else { 
+            this.done=true; 
+            running=false; 
+            Speech.say('Sessione completata'); 
+            beep(1000,200); 
+            beep(1200,200); 
+            $('#status').textContent='Completato'; 
+          } 
+        } 
+      }
+      else if(this.mode==='between'){ 
+        this.mode='work'; 
+        this.t=this.work; 
+        $('#status').textContent='Lavoro'; 
+        Speech.say('Vai!'); 
+        beep(1200,120); 
+      } 
+    }
     if (this.mode==='rest' && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
@@ -333,14 +386,67 @@ class CircuitController{
     if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
       this.didCountdown=true; Speech.countdown(3);
     }
-    if(this.t<=0){ if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); const nextEx=(this.ex < this.exercises)?(this.ex+1):1; Speech.say(`Prossimo: esercizio ${nextEx}`); this.didCountdown=false; beep(880,120); }
-      else if(this.mode==='rest'){ if(this.ex<this.exercises){ this.ex++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; beep(1200,120); }
-        else { if(this.round<this.rounds){ this.round++; this.ex=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-          if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
-          else { this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); } $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; }
-          else { running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; } } }
-      else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); } }
-    if (this.mode==='rest' && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+    if(this.t<=0){ 
+      if(this.mode==='work'){ 
+        this.mode='rest'; 
+        this.t=this.rest; 
+        $('#status').textContent='Recupero'; 
+        Speech.say('Recupero'); 
+        const nextEx=(this.ex < this.exercises)?(this.ex+1):1; 
+        Speech.say(`Prossimo: esercizio ${nextEx}`); 
+        this.didCountdown=false; 
+        beep(880,120); 
+      }
+      else if(this.mode==='rest'){ 
+        if(this.ex<this.exercises){ 
+          this.ex++; 
+          this.mode='work'; 
+          this.t=this.work; 
+          $('#status').textContent='Lavoro'; 
+          $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
+          beep(1200,120); 
+          this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+        }
+        else { 
+          if(this.round<this.rounds){ 
+            this.round++; 
+            this.ex=1; 
+            $('#round-state').textContent=`${this.round}/${this.rounds}`;
+            if(this.br>0){ 
+              this.mode='between'; 
+              this.t=this.br; 
+              $('#status').textContent='Recupero tra giri'; 
+              Speech.say('Recupero tra giri'); 
+              beep(600,150); 
+              this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+            }
+            else { 
+              this.mode='work'; 
+              this.t=this.work; 
+              $('#status').textContent='Lavoro'; 
+              beep(1200,120); 
+              this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+            } 
+            $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
+          }
+          else { 
+            running=false; 
+            Speech.say('Sessione completata'); 
+            beep(1000,200); 
+            beep(1200,200); 
+            $('#status').textContent='Completato'; 
+          } 
+        } 
+      }
+      else if(this.mode==='between'){ 
+        this.mode='work'; 
+        this.t=this.work; 
+        $('#status').textContent='Lavoro'; 
+        Speech.say('Vai!'); 
+        beep(1200,120); 
+        this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+      } 
+    }
   }
   next(){ this.t = 0.01; }
 }
