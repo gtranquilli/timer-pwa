@@ -273,6 +273,10 @@ const Speech = (() => {
   function countdown(sec = 3) {
     clearCountdown(); ensureAudio();
     let n = sec;
+    // Pronuncia subito il primo numero!
+    say(String(n));
+    beep(880, 90);
+    n--;
     countdownTimer = setInterval(() => {
       if (n <= 0) { clearCountdown(); return; }
       say(String(n));
@@ -311,7 +315,7 @@ class IntervalController{
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
 
     // Countdown per rest e work
-    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
+    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && Math.round(this.t) === 3){
       this.didCountdown=true; Speech.countdown(3);
     }
 
@@ -383,7 +387,7 @@ class CircuitController{
     $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
+    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && Math.round(this.t) === 3){
       this.didCountdown=true; Speech.countdown(3);
     }
     if(this.t<=0){ 
@@ -405,7 +409,7 @@ class CircuitController{
           $('#status').textContent='Lavoro'; 
           $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
           beep(1200,120); 
-          this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+          this.didCountdown=false; 
         }
         else { 
           if(this.round<this.rounds){ 
@@ -418,14 +422,14 @@ class CircuitController{
               $('#status').textContent='Recupero tra giri'; 
               Speech.say('Recupero tra giri'); 
               beep(600,150); 
-              this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+              this.didCountdown=false; 
             }
             else { 
               this.mode='work'; 
               this.t=this.work; 
               $('#status').textContent='Lavoro'; 
               beep(1200,120); 
-              this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+              this.didCountdown=false;
             } 
             $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
           }
@@ -444,7 +448,7 @@ class CircuitController{
         $('#status').textContent='Lavoro'; 
         Speech.say('Vai!'); 
         beep(1200,120); 
-        this.didCountdown=false; // <-- AGGIUNGI QUESTA RIGA QUI
+        this.didCountdown=false; 
       } 
     }
   }
