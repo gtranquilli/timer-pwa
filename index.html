@@ -17,8 +17,28 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 const WORKOUTS = [
-  {name: "Ponte glutei", mediaUrl: "media/placeholder.png"},
-  {name: "Rematore con manubri", mediaUrl: "media/placeholder.png"}
+  // Lunedì – Full Body dolce
+  {name: "Squat al muro", mediaUrl: "media/squat_muro.jpg"},
+  {name: "Spinte con manubri da seduta", mediaUrl: "media/spinte_manubri_seduta.jpg"},
+  {name: "Ponte glutei", mediaUrl: "media/ponte_glutei.jpg"},
+  {name: "Rematore con manubri", mediaUrl: "media/rematore_manubri.jpg"},
+  {name: "Camminata sul posto (low impact)", mediaUrl: "media/camminata_bassa_intensita.mp4"},
+  {name: "Crunch base", mediaUrl: "media/crunch_base.jpg"},
+
+  // Mercoledì – HIIT Low Impact
+  {name: "Step-up su scalino", mediaUrl: "media/stepup_scalino.jpg"},
+  {name: "Slanci posteriori (quadrupedia)", mediaUrl: "media/slanci_posteriori_quadrupedia.jpg"},
+  {name: "Punch frontali con manubri leggeri", mediaUrl: "media/punch_frontali_manubri.jpg"},
+  {name: "Side step + touch a terra", mediaUrl: "media/sidestep_touch_terra.mp4"},
+  {name: "Superman a terra", mediaUrl: "media/superman_terra.jpg"},
+  {name: "Crunch / Sit-up assistiti", mediaUrl: "media/situp_assistiti.jpg"},
+
+  // Venerdì – Lower Body & Core
+  {name: "Ponte glutei con cavigliere", mediaUrl: "media/ponte_glutei_cavigliere.jpg"},
+  {name: "Slanci laterali in piedi (supporto)", mediaUrl: "media/slanci_laterali_inpiedi.jpg"},
+  {name: "Affondi indietro statici (supporto)", mediaUrl: "media/affondi_indietro_statici.jpg"},
+  {name: "Russian Twist", mediaUrl: "media/russian_twist.jpg"},
+  {name: "Plank sulle ginocchia", mediaUrl: "media/plank_ginocchia.jpg"}
 ];
 function speak(t){ if('speechSynthesis' in window){ let u=new SpeechSynthesisUtterance(t); speechSynthesis.speak(u);} }
 let i=0;
