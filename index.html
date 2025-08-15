@@ -330,6 +330,9 @@ class CircuitController{
     $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
+    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
+      this.didCountdown=true; Speech.countdown(3);
+    }
     if(this.t<=0){ if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); const nextEx=(this.ex < this.exercises)?(this.ex+1):1; Speech.say(`Prossimo: esercizio ${nextEx}`); this.didCountdown=false; beep(880,120); }
       else if(this.mode==='rest'){ if(this.ex<this.exercises){ this.ex++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; beep(1200,120); }
         else { if(this.round<this.rounds){ this.round++; this.ex=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
