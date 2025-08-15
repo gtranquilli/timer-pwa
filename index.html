@@ -309,6 +309,10 @@ class IntervalController{
     $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
+    // Countdown per rest e work
+    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && this.t<=3.4){
+      this.didCountdown=true; Speech.countdown(3);
+    }
     if(this.t<=0){ if(this.mode==='work'){ beep(880,120); Speech.say('Recupero'); const nextStation=(this.station < this.stations)?(this.station+1):1; Speech.say(`Prossimo: stazione ${nextStation}`); this.didCountdown=false; this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; }
       else if(this.mode==='rest'){ if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
         else { if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
