@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/logotras.png">
 <style>
   :root{ --bg:#0f1115; --panel:#171a21; --accent:#68d391; --accent2:#61dafb; --danger:#ff6b6b; --muted:#a0aec0; --text:#e2e8f0; }
   *{box-sizing:border-box}
@@ -23,7 +23,7 @@
   .card{ background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid #232735; border-radius:14px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.22); }
   .controls .row{ display:grid; grid-template-columns: 1.2fr 1fr; gap:8px; margin-bottom:10px; }
   label{font-size:12px; color:var(--muted); margin-bottom:6px; display:block}
-  input, select, button, textarea{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2b3040; background:#0d0f14; color:var(--text); outline:none; }
+  input, select, button, textarea{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2b3040; background:#0d0f14; color:#e2e8f0; outline:none; }
   input[type="number"]{appearance:textfield} input[type="range"]{height: 32px;}
   button{ background: linear-gradient(180deg, #1e2230, #171a24); cursor:pointer; transition:.2s ease; }
   button:hover{transform: translateY(-1px);} button.primary{ background: linear-gradient(180deg, #2a9d6f, #238f65); border: 1px solid #2fbf7f; color:#07140e; font-weight:700; }
@@ -37,13 +37,32 @@
   .stack{display:flex; align-items:center; justify-content:space-between; gap:8px} .kbd{ border:1px solid #2b3040; border-bottom-width:2px; padding:2px 6px; border-radius:6px; font-size:11px; color:#aab6c6; background:#0e1218; }
   .list{display:flex; flex-direction:column; gap:8px; margin-top:8px} .list .item{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; border:1px dashed #2b3040; border-radius:10px; }
   .tiny{font-size:11px; color:#94a3b8} .ok{color:var(--accent)} .danger{color:var(--danger)} footer{ padding: 10px 16px; color:#8693a6; border-top:1px solid #222631; font-size:12px }
+
+  /* Media area */
+  .media{position:relative;width:100%;aspect-ratio:16/9;background:#0b0f15;border:1px solid #23293a;border-radius:12px;overflow:hidden}
+  .media img,.media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+  .media .overlay{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:center;gap:8px;
+    padding:8px 10px;background:linear-gradient(180deg,transparent,rgba(8,10,14,.8));color:#e2e8f0;font-size:12px}
+  .badge{font-weight:700;padding:4px 8px;border-radius:999px;border:1px solid #2b3040;background:rgba(15,17,24,.8)}
+  .next{opacity:.9}
+  .ghost-note{font-size:12px;color:#9aa7bb;text-align:center;margin-top:6px}
+
+  /* Tabs + Catalogo */
+  .tabs{display:flex;gap:8px;margin-bottom:10px}
+  .tabs button{padding:8px 10px;border-radius:10px;border:1px solid #2b3040;background:#0d0f14;color:#c9d2e3}
+  .tabs button.active{background:#1a2330;color:#fff;border-color:#2a3346}
+  #catalog{display:none}
+  .grid-catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .ex-card{border:1px solid #2b3040;border-radius:12px;overflow:hidden;background:#0d0f14}
+  .ex-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+  .ex-card .name{padding:8px;font-size:12px;color:#c9d2e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Timer Allenamento – Mini App</h1>
-    <div class="sub">Intervalli • Circuito • Set/Serie – con beep, voce e preset • PWA</div>
+    <div class="sub">Intervalli • Circuito • Set/Serie – con beep, voce, immagini • PWA</div>
   </div>
   <div class="stack tiny">
     <div class="kbd">Spazio</div> start/pausa
@@ -53,8 +72,13 @@
 </header>
 
 <main>
-  <!-- Controls -->
+  <!-- Controls + Tabs -->
   <section class="card controls">
+    <div class="tabs">
+      <button id="tab-timer" class="active">Timer</button>
+      <button id="tab-catalog">Catalogo</button>
+    </div>
+
     <div class="row">
       <div>
         <label for="mode">Modalità</label>
@@ -77,103 +101,44 @@
 
     <div id="config-interval">
       <div class="grid-3">
-        <div>
-          <label>Lavoro (sec)</label>
-          <input type="number" id="int-work" min="5" value="40">
-        </div>
-        <div>
-          <label>Recupero (sec)</label>
-          <input type="number" id="int-rest" min="5" value="20">
-        </div>
-        <div>
-          <label>Stazioni</label>
-          <input type="number" id="int-stations" min="1" value="6">
-        </div>
+        <div><label>Lavoro (sec)</label><input type="number" id="int-work" min="5" value="40"></div>
+        <div><label>Recupero (sec)</label><input type="number" id="int-rest" min="5" value="20"></div>
+        <div><label>Stazioni</label><input type="number" id="int-stations" min="1" value="6"></div>
       </div>
       <div class="grid-2" style="margin-top:8px">
-        <div>
-          <label>Giri (round)</label>
-          <input type="number" id="int-rounds" min="1" value="2">
-        </div>
-        <div>
-          <label>Recupero tra giri (sec)</label>
-          <input type="number" id="int-between-rounds" min="0" value="120">
-        </div>
+        <div><label>Giri (round)</label><input type="number" id="int-rounds" min="1" value="2"></div>
+        <div><label>Recupero tra giri (sec)</label><input type="number" id="int-between-rounds" min="0" value="120"></div>
       </div>
     </div>
 
     <div id="config-circuit" style="display:none">
       <div class="grid-3">
-        <div>
-          <label>Esercizi per giro</label>
-          <input type="number" id="c-exercises" min="1" value="6">
-        </div>
-        <div>
-          <label>Tempo per esercizio (sec)</label>
-          <input type="number" id="c-work" min="5" value="45">
-        </div>
-        <div>
-          <label>Recupero tra esercizi (sec)</label>
-          <input type="number" id="c-rest" min="0" value="30">
-        </div>
+        <div><label>Esercizi per giro</label><input type="number" id="c-exercises" min="1" value="6"></div>
+        <div><label>Tempo per esercizio (sec)</label><input type="number" id="c-work" min="5" value="45"></div>
+        <div><label>Recupero tra esercizi (sec)</label><input type="number" id="c-rest" min="0" value="30"></div>
       </div>
       <div class="grid-2" style="margin-top:8px">
-        <div>
-          <label>Giri (round)</label>
-          <input type="number" id="c-rounds" min="1" value="3">
-        </div>
-        <div>
-          <label>Recupero tra giri (sec)</label>
-          <input type="number" id="c-between-rounds" min="0" value="60">
-        </div>
+        <div><label>Giri (round)</label><input type="number" id="c-rounds" min="1" value="3"></div>
+        <div><label>Recupero tra giri (sec)</label><input type="number" id="c-between-rounds" min="0" value="60"></div>
       </div>
     </div>
 
     <div id="config-sets" style="display:none">
       <div class="grid-3">
-        <div>
-          <label>Nome esercizio</label>
-          <input type="text" id="s-name" placeholder="es. Ponte glutei">
-        </div>
-        <div>
-          <label>Numero set</label>
-          <input type="number" id="s-sets" min="1" value="3">
-        </div>
-        <div>
-          <label>Recupero tra set (sec)</label>
-          <input type="number" id="s-rest" min="5" value="60">
-        </div>
+        <div><label>Nome esercizio</label><input type="text" id="s-name" placeholder="es. Ponte glutei"></div>
+        <div><label>Numero set</label><input type="number" id="s-sets" min="1" value="3"></div>
+        <div><label>Recupero tra set (sec)</label><input type="number" id="s-rest" min="5" value="60"></div>
       </div>
       <div class="grid-2" style="margin-top:8px">
-        <div>
-          <label>Durata lavoro (sec) – opzionale</label>
-          <input type="number" id="s-work" min="0" value="0">
-        </div>
-        <div>
-          <label>Avanzamento set</label>
-          <select id="s-advance">
-            <option value="manual">Manuale (clic/Barra spaziatrice)</option>
-            <option value="auto">Automatico (usa durata lavoro)</option>
-          </select>
-        </div>
+        <div><label>Durata lavoro (sec) – opzionale</label><input type="number" id="s-work" min="0" value="0"></div>
+        <div><label>Avanzamento set</label><select id="s-advance"><option value="manual">Manuale (clic/Barra spaziatrice)</option><option value="auto">Automatico (usa durata lavoro)</option></select></div>
       </div>
-      <div class="tiny" style="margin-top:8px">
-        Suggerimento: usa questa modalità quando vuoi contare i set di un singolo esercizio e avere il <b>rest</b> fisso tra un set e l'altro.
-      </div>
+      <div class="tiny" style="margin-top:8px">Suggerimento: usa questa modalità quando vuoi contare i set di un singolo esercizio e avere il <b>rest</b> fisso tra un set e l'altro.</div>
     </div>
 
     <div class="row" style="margin-top:10px">
-      <div>
-        <label>Voce guida</label>
-        <select id="voice-toggle">
-          <option value="off">Spenta</option>
-          <option value="on">Accesa</option>
-        </select>
-      </div>
-      <div>
-        <label>Volume beep</label>
-        <input type="range" id="beep-volume" min="0" max="100" value="70">
-      </div>
+      <div><label>Voce guida</label><select id="voice-toggle"><option value="off">Spenta</option><option value="on">Accesa</option></select></div>
+      <div><label>Volume beep</label><input type="range" id="beep-volume" min="0" max="100" value="70"></div>
     </div>
 
     <div class="btn-row" style="margin-top:6px">
@@ -188,7 +153,16 @@
   </section>
 
   <!-- Timer -->
-  <section class="card">
+  <section class="card" id="timer-card">
+    <div class="media" id="media">
+      <img id="media-img" alt="">
+      <video id="media-video" autoplay muted loop playsinline></video>
+      <div class="overlay">
+        <div class="badge" id="media-badge">Lavoro</div>
+        <div class="next">Prossimo: <span id="media-next">—</span></div>
+      </div>
+    </div>
+    <div class="ghost-note">Durante <b>lavoro</b> vedi l'esercizio corrente • Durante <b>recupero</b> vedi il prossimo</div>
     <div class="timer" id="timer">
       <div class="time" id="display">00:00</div>
       <div class="label" id="status">Pronto</div>
@@ -201,48 +175,49 @@
 
     <div class="card" style="margin-top:12px">
       <div class="stack" style="gap:10px">
-        <div>
-          <div class="tiny">Stato sessione</div>
-          <div id="session-state" class="muted">—</div>
-        </div>
-        <div>
-          <div class="tiny">Round</div>
-          <div id="round-state" class="muted">—</div>
-        </div>
-        <div>
-          <div class="tiny">Esercizio/Set</div>
-          <div id="ex-state" class="muted">—</div>
-        </div>
-        <div>
-          <div class="tiny">Tempo totale</div>
-          <div id="elapsed" class="muted">00:00</div>
-        </div>
+        <div><div class="tiny">Stato sessione</div><div id="session-state" class="muted">—</div></div>
+        <div><div class="tiny">Round</div><div id="round-state" class="muted">—</div></div>
+        <div><div class="tiny">Esercizio/Set</div><div id="ex-state" class="muted">—</div></div>
+        <div><div class="tiny">Tempo totale</div><div id="elapsed" class="muted">00:00</div></div>
       </div>
     </div>
+  </section>
 
+  <!-- Catalogo -->
+  <section class="card" id="catalog">
+    <h3 style="margin:0 0 8px 0;">Catalogo esercizi (da workout.json)</h3>
+    <div class="grid-catalog" id="catalog-grid"></div>
   </section>
 </main>
 
 <footer>
-  PWA offline. Dopo la pubblicazione su HTTPS, apri in Safari e usa "Condividi → Aggiungi a Home".
+  PWA offline. Apri in Safari e usa "Condividi → Aggiungi a Home".
 </footer>
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js');
-  });
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
 }
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 function fmt(t){ t = Math.max(0, Math.round(t)); const m = Math.floor(t/60).toString().padStart(2,'0'); const s = (t%60).toString().padStart(2,'0'); return `${m}:${s}`; }
 
+/* Tabs */
+$('#tab-timer').addEventListener('click', ()=>{
+  $('#tab-timer').classList.add('active'); $('#tab-catalog').classList.remove('active');
+  $('#timer-card').style.display=''; $('#catalog').style.display='none';
+});
+$('#tab-catalog').addEventListener('click', ()=>{
+  $('#tab-catalog').classList.add('active'); $('#tab-timer').classList.remove('active');
+  $('#timer-card').style.display='none'; $('#catalog').style.display='';
+});
+
+/* Speech robusto */
 const Speech = (() => {
   let ready = false;
   let queue = [];
   let countdownTimer = null;
-
   function init() {
     if (ready) return;
     const onInteract = () => { ready = true; try { speechSynthesis.cancel(); } catch(e) {} drain(); };
@@ -250,7 +225,6 @@ const Speech = (() => {
       window.addEventListener(ev, onInteract, { once:true, passive:true })
     );
   }
-
   function say(text) {
     const toggle = document.querySelector('#voice-toggle');
     if (toggle && toggle.value !== 'on') return;
@@ -261,217 +235,173 @@ const Speech = (() => {
     queue.push(u);
     if (ready) drain();
   }
-
-  function drain() {
-    if (!queue.length || (speechSynthesis.speaking)) return;
-    try { speechSynthesis.speak(queue.shift()); } catch(e) {}
-  }
-
-  function stop() { queue = []; clearCountdown(); try { speechSynthesis.cancel(); } catch(e) {} }
-  function clearCountdown(){ if (countdownTimer) { clearInterval(countdownTimer); countdownTimer=null; } }
-
-  function countdown(sec = 3) {
+  function drain(){ if (!queue.length || speechSynthesis.speaking) return; try{ speechSynthesis.speak(queue.shift()); }catch(e){} }
+  function stop(){ queue=[]; clearCountdown(); try{ speechSynthesis.cancel(); }catch(e){} }
+  function clearCountdown(){ if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; } }
+  function countdown(sec=3){
     clearCountdown(); ensureAudio();
-    let n = sec;
-    // Pronuncia subito il primo numero!
-    say(String(n));
-    beep(880, 90);
-    n--;
-    countdownTimer = setInterval(() => {
-      if (n <= 0) { clearCountdown(); return; }
-      say(String(n));
-      beep(880, 90);
-      n--;
-    }, 1000);
+    let n=sec;
+    say(String(n)); beep(880,90); n--;
+    countdownTimer=setInterval(()=>{
+      if(n<=0){ clearCountdown(); return; }
+      say(String(n)); beep(880,90); n--;
+    },1000);
   }
-
   init();
   return { say, stop, countdown, clearCountdown };
 })();
 
+/* Audio beep */
 let audioCtx = null, masterGain = null;
 function ensureAudio(){ if(audioCtx) return; audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = $('#beep-volume').value/100; masterGain.connect(audioCtx.destination); }
-function beep(freq=880, dur=140, type='sine'){ ensureAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur/1000); osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + dur/1000 + 0.01); }
+function beep(freq=880, dur=140, type='sine'){ ensureAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type=type; osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.7, audioCtx.currentTime+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur/1000); osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime+dur/1000+0.01); }
 $('#beep-volume').addEventListener('input', e=>{ ensureAudio(); masterGain.gain.value = e.target.value/100; });
 
-let running = false; let startStamp = null; let totalElapsed = 0; let tickHandle = null;
-function resetClock(){ running = false; startStamp = null; totalElapsed = 0; clearInterval(tickHandle);
-  $('#display').textContent = '00:00'; $('#status').textContent = 'Pronto'; $('#bar').style.width = '0%';
-  $('#session-state').textContent = '—'; $('#round-state').textContent = '—'; $('#ex-state').textContent = '—'; $('#elapsed').textContent = '00:00'; $('#substatus').textContent = ''; }
-function start(){ ensureAudio(); if(!running){ running = true; startStamp = performance.now(); tickHandle = setInterval(tick, 100); } }
-function pause(){ if(running){ running = false; clearInterval(tickHandle); } else { start(); } }
+/* Media helpers */
+const mediaEl={box:$('#media'),img:$('#media-img'),vid:$('#media-video'),badge:$('#media-badge'),next:$('#media-next')};
+function showImage(src){ mediaEl.vid.pause(); mediaEl.vid.removeAttribute('src'); mediaEl.vid.style.display='none'; mediaEl.img.src=src; mediaEl.img.style.display='block'; }
+function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
+function showMedia(obj,badge=''){ if(!obj||!obj.mediaUrl){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.badge.textContent=badge||''; mediaEl.next.textContent='—'; return; }
+  if(obj.mediaUrl.endsWith('.mp4')) showVideo(obj.mediaUrl); else showImage(obj.mediaUrl); mediaEl.badge.textContent=badge||''; }
+function setNextName(name){ mediaEl.next.textContent=name||'—'; }
+function preloadImage(src){ if(!src || src.endsWith('.mp4')) return; const im=new Image(); im.src=src; }
+
+/* Dati workout + catalogo */
+let WORKCFG=null, PRESETS_FILE={}, EX_CATALOG=[], activeExercises=[];
+fetch('workout.json').then(r=>r.json()).then(data=>{
+  WORKCFG=data;
+  if(data && data.presets){
+    Object.keys(data.presets).forEach(k=>{
+      const p=data.presets[k];
+      PRESETS_FILE[k]={ mode:'circuit',
+        c:{ exercises:(p.exercises||[]).length || 6, work:p.work || data.defaults?.work || 45, rest:p.rest || data.defaults?.rest || 30, rounds:p.rounds || data.defaults?.rounds || 1, betweenRounds:p.betweenRounds || 60 },
+        exercises: p.exercises || []
+      };
+      if(!$('#preset').querySelector(`option[value="${k}"]`)){
+        const opt=document.createElement('option'); opt.value=k; opt.textContent=p.title||k; $('#preset').appendChild(opt);
+      }
+      (p.exercises||[]).forEach(ex=>{ if(!EX_CATALOG.find(e=>e.name===ex.name)) EX_CATALOG.push({name:ex.name, mediaUrl:ex.mediaUrl}); });
+    });
+  }
+  renderCatalog();
+}).catch(()=>{});
+
+/* Catalogo render */
+function renderCatalog(){
+  const grid=$('#catalog-grid'); if(!grid) return; grid.innerHTML='';
+  EX_CATALOG.forEach(ex=>{
+    const card=document.createElement('div'); card.className='ex-card';
+    const img=document.createElement('img'); img.src=ex.mediaUrl; img.alt=ex.name;
+    const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
+    card.appendChild(img); card.appendChild(name); grid.appendChild(card);
+    card.addEventListener('click', ()=>{ $('#tab-timer').click(); showMedia(ex,'Anteprima'); setNextName('—'); Speech.say(ex.name); });
+  });
+}
+
+/* Timer base */
+let running=false; let startStamp=null; let totalElapsed=0; let tickHandle=null;
+function resetClock(){ running=false; startStamp=null; totalElapsed=0; clearInterval(tickHandle);
+  $('#display').textContent='00:00'; $('#status').textContent='Pronto'; $('#bar').style.width='0%';
+  $('#session-state').textContent='—'; $('#round-state').textContent='—'; $('#ex-state').textContent='—'; $('#elapsed').textContent='00:00'; $('#substatus').textContent=''; }
+function start(){ ensureAudio(); if(!running){ running=true; startStamp=performance.now(); tickHandle=setInterval(tick,100); } }
+function pause(){ if(running){ running=false; clearInterval(tickHandle); } else { start(); } }
 function nextStep(){ if(controller && controller.next) controller.next(); }
 function tick(){ if(controller && controller.update) controller.update(); $('#elapsed').textContent = fmt(totalElapsed + (running ? (performance.now()-startStamp)/1000 : 0)); }
 
-let controller = null;
+/* Controller */
+let controller=null;
+
 class IntervalController{
   constructor(cfg){ this.work=+cfg.work; this.rest=+cfg.rest; this.stations=+cfg.stations; this.rounds=+cfg.rounds; this.br=+cfg.betweenRounds; this.reset(); }
   reset(){ this.mode='work'; this.t=this.work; this.station=1; this.round=1; this.done=false; this.didCountdown=false; resetClock();
     $('#session-state').textContent='HIIT Intervalli'; $('#round-state').textContent=`${this.round}/${this.rounds}`; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
-    $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; }
+    $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; showMedia(null); setNextName('—'); }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-
-    // Countdown per rest e work
-    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && Math.round(this.t) === 3){
-      this.didCountdown=true; Speech.countdown(3);
-    }
-
-    if(this.t<=0){ 
-      if(this.mode==='work'){ 
-        this.mode='rest'; 
-        this.t=this.rest; 
-        $('#status').textContent='Recupero'; 
-        Speech.say('Recupero'); 
-        const nextStation=(this.station < this.stations)?(this.station+1):1; 
-        Speech.say(`Prossimo: stazione ${nextStation}`); 
-        this.didCountdown=false; 
-        beep(880,120); 
-      }
-      else if(this.mode==='rest'){ 
-        if(this.station<this.stations){ 
-          this.station++; 
-          this.mode='work'; 
-          this.t=this.work; 
-          $('#status').textContent='Lavoro'; 
-          $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; 
-          beep(1200,120); 
+    if(this.t<=0){
+      if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; beep(880,120); }
+      else if(this.mode==='rest'){
+        if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
+        else{
+          if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
+            if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
+            else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); }
+            $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
+          } else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; }
         }
-        else { 
-          if(this.round<this.rounds){ 
-            this.round++; 
-            this.station=1; 
-            $('#round-state').textContent=`${this.round}/${this.rounds}`;
-            if(this.br>0){ 
-              this.mode='between'; 
-              this.t=this.br; 
-              $('#status').textContent='Recupero tra giri'; 
-              Speech.say('Recupero tra giri'); 
-              beep(600,150); 
-            }
-            else { 
-              this.mode='work'; 
-              this.t=this.work; 
-              $('#status').textContent='Lavoro'; 
-              beep(1200,120); 
-            } 
-            $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; 
-          }
-          else { 
-            this.done=true; 
-            running=false; 
-            Speech.say('Sessione completata'); 
-            beep(1000,200); 
-            beep(1200,200); 
-            $('#status').textContent='Completato'; 
-          } 
-        } 
       }
-      else if(this.mode==='between'){ 
-        this.mode='work'; 
-        this.t=this.work; 
-        $('#status').textContent='Lavoro'; 
-        Speech.say('Vai!'); 
-        beep(1200,120); 
-      } 
+      else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); }
     }
-    if (this.mode==='rest' && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+    // Countdown SOLO nel recupero
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
 }
+
 class CircuitController{
   constructor(cfg){ this.exercises=+cfg.exercises; this.work=+cfg.work; this.rest=+cfg.rest; this.rounds=+cfg.rounds; this.br=+cfg.betweenRounds; this.reset(); }
-  reset(){ this.mode='work'; this.t=this.work; this.ex=1; this.round=1; this.didCountdown=false; resetClock(); $('#session-state').textContent='Circuito'; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-    $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); }
+  get curr(){ return activeExercises[this.ex-1] || null; }
+  get nextEx(){ const nx=(this.ex < this.exercises)?(this.ex+1):1; return activeExercises[nx-1] || null; }
+  renderMedia(){
+    if (this.mode==='work'){ showMedia(this.curr,'Lavoro'); setNextName(this.nextEx?.name||'—'); preloadImage(this.nextEx?.mediaUrl); }
+    else if (this.mode==='rest'){ showMedia(this.nextEx,'Recupero'); setNextName(this.nextEx?.name||'—'); preloadImage(this.curr?.mediaUrl); }
+    else { showMedia(null); setNextName('—'); }
+  }
+  reset(){ this.mode='work'; this.t=this.work; this.ex=1; this.round=1; this.didCountdown=false; resetClock();
+    $('#session-state').textContent='Circuito'; $('#round-state').textContent=`${this.round}/${this.rounds}`;
+    $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t);
+    this.renderMedia();
+  }
   update(){ if(!running) return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-    if ((this.mode==='rest' || this.mode==='work') && !this.didCountdown && Math.round(this.t) === 3){
-      this.didCountdown=true; Speech.countdown(3);
-    }
-    if(this.t<=0){ 
-      if(this.mode==='work'){ 
-        this.mode='rest'; 
-        this.t=this.rest; 
-        $('#status').textContent='Recupero'; 
-        Speech.say('Recupero'); 
-        const nextEx=(this.ex < this.exercises)?(this.ex+1):1; 
-        Speech.say(`Prossimo: esercizio ${nextEx}`); 
-        this.didCountdown=false; 
-        beep(880,120); 
-      }
-      else if(this.mode==='rest'){ 
-        if(this.ex<this.exercises){ 
-          this.ex++; 
-          this.mode='work'; 
-          this.t=this.work; 
-          $('#status').textContent='Lavoro'; 
-          $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
-          beep(1200,120); 
-          this.didCountdown=false; 
+    if(this.t<=0){
+      if(this.mode==='work'){
+        this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.nextEx) Speech.say(`Prossimo: ${this.nextEx.name}`); this.didCountdown=false; beep(880,120); this.renderMedia();
+      } else if(this.mode==='rest'){
+        if(this.ex<this.exercises){ this.ex++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; beep(1200,120); this.renderMedia(); }
+        else{
+          if(this.round<this.rounds){ this.round++; this.ex=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
+            if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); this.renderMedia(); }
+            else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); this.renderMedia(); }
+            $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`;
+          } else { running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; showMedia(null); setNextName('—'); }
         }
-        else { 
-          if(this.round<this.rounds){ 
-            this.round++; 
-            this.ex=1; 
-            $('#round-state').textContent=`${this.round}/${this.rounds}`;
-            if(this.br>0){ 
-              this.mode='between'; 
-              this.t=this.br; 
-              $('#status').textContent='Recupero tra giri'; 
-              Speech.say('Recupero tra giri'); 
-              beep(600,150); 
-              this.didCountdown=false; 
-            }
-            else { 
-              this.mode='work'; 
-              this.t=this.work; 
-              $('#status').textContent='Lavoro'; 
-              beep(1200,120); 
-              this.didCountdown=false;
-            } 
-            $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; 
-          }
-          else { 
-            running=false; 
-            Speech.say('Sessione completata'); 
-            beep(1000,200); 
-            beep(1200,200); 
-            $('#status').textContent='Completato'; 
-          } 
-        } 
-      }
-      else if(this.mode==='between'){ 
-        this.mode='work'; 
-        this.t=this.work; 
-        $('#status').textContent='Lavoro'; 
-        Speech.say('Vai!'); 
-        beep(1200,120); 
-        this.didCountdown=false; 
-      } 
+      } else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); this.renderMedia(); }
     }
+    // Countdown SOLO nel recupero
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ this.t = 0.01; }
 }
+
 class SetsController{
   constructor(cfg){ this.name=cfg.name||'Esercizio'; this.sets=+cfg.sets; this.rest=+cfg.rest; this.work=Math.max(0,+cfg.work||0); this.advance=cfg.advance||'manual'; this.reset(); }
   reset(){ this.current=1; this.mode=this.work>0 && this.advance==='auto' ? 'work' : 'idle'; this.t=this.mode==='work'?this.work:0; this.didCountdown=false; resetClock();
     $('#session-state').textContent='Set/Serie'; $('#round-state').textContent=`—`; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
-    $('#status').textContent = this.mode==='work' ? 'Lavoro' : 'Pronto'; $('#display').textContent= fmt(this.t); }
+    $('#status').textContent = this.mode==='work' ? 'Lavoro' : 'Pronto'; $('#display').textContent= fmt(this.t); showMedia(null); setNextName('—'); }
   update(){ if(!running) return; if(this.mode==='idle') return; this.t-=0.1; $('#display').textContent=fmt(this.t); const max=(this.mode==='work')?Math.max(1,this.work):Math.max(1,this.rest);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
-    if(this.t<=0){ if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
-      else if(this.mode==='rest'){ if(this.current<this.sets){ this.current++; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
+    if(this.t<=0){
+      if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
+      else if(this.mode==='rest'){
+        if(this.current<this.sets){
+          this.current++; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
           if(this.advance==='auto' && this.work>0){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai'); beep(1200,120); }
-          else { this.mode='idle'; running=false; $('#status').textContent='Pronto (avanza manualmente)'; Speech.say('Pronto'); beep(1200,120); } }
-        else { running=false; beep(1000,200); beep(1200,200); Speech.say('Esercizio completato'); $('#status').textContent='Completato'; } } }
-    if (this.mode==='rest' && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+          else { this.mode='idle'; running=false; $('#status').textContent='Pronto (avanza manualmente)'; Speech.say('Pronto'); beep(1200,120); }
+        } else { running=false; beep(1000,200); beep(1200,200); Speech.say('Esercizio completato'); $('#status').textContent='Completato'; }
+      }
+    }
+    // Countdown SOLO nel recupero
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
   }
   next(){ ensureAudio(); if(this.mode==='idle'){ this.mode=(this.advance==='auto' && this.work>0)?'work':'rest'; this.t=this.mode==='work'?this.work:this.rest;
       if(this.mode==='work'){ $('#status').textContent='Lavoro'; Speech.say('Vai'); } else { $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; } start();
     } else { this.t=0.01; } }
 }
+
+/* Build controller + visibilità */
 function buildControllerFromUI(){
   const mode = $('#mode').value;
   if(mode==='interval'){ controller = new IntervalController({ work: $('#int-work').value, rest: $('#int-rest').value, stations: $('#int-stations').value, rounds: $('#int-rounds').value, betweenRounds: $('#int-between-rounds').value }); }
@@ -480,19 +410,31 @@ function buildControllerFromUI(){
 }
 function updateConfigVisibility(){ $('#config-interval').style.display = $('#mode').value==='interval' ? '' : 'none'; $('#config-circuit').style.display  = $('#mode').value==='circuit'  ? '' : 'none'; $('#config-sets').style.display     = $('#mode').value==='sets'     ? '' : 'none'; }
 $('#mode').addEventListener('change', ()=>{ updateConfigVisibility(); buildControllerFromUI(); });
-const BUILT_IN = { 'lunedi': { mode:'circuit', c:{exercises:6, work:45, rest:30, rounds:3, betweenRounds:60} }, 'mercoledi': { mode:'interval', i:{work:40, rest:20, stations:6, rounds:2, betweenRounds:120} }, 'venerdi': { mode:'circuit', c:{exercises:5, work:45, rest:30, rounds:3, betweenRounds:60} } };
+
+/* Preset (file + built-in) */
+const BUILT_IN = {
+  'lunedi':   { title:'Lunedì – Full Body dolce', mode:'circuit',  c:{exercises:6, work:45, rest:30, rounds:1, betweenRounds:60},  exercises: [] },
+  'mercoledi':{ title:'Mercoledì – HIIT Low Impact', mode:'interval', i:{work:40, rest:20, stations:6, rounds:2, betweenRounds:120} },
+  'venerdi':  { title:'Venerdì – Lower Body & Core',  mode:'circuit',  c:{exercises:5, work:45, rest:30, rounds:3, betweenRounds:60}, exercises: [] }
+};
 $('#preset').addEventListener('change', e=>{
-  const key=e.target.value; if(!key) return; const p = BUILT_IN[key] || JSON.parse(localStorage.getItem('preset:'+key) || 'null'); if(!p) return;
+  const key=e.target.value; if(!key) return;
+  const fromFile = PRESETS_FILE[key];
+  const p = fromFile || BUILT_IN[key] || JSON.parse(localStorage.getItem('preset:'+key) || 'null');
+  if(!p) return;
   $('#mode').value = p.mode || 'interval'; updateConfigVisibility();
   if(p.i){ $('#int-work').value=p.i.work; $('#int-rest').value=p.i.rest; $('#int-stations').value=p.i.stations; $('#int-rounds').value=p.i.rounds; $('#int-between-rounds').value=p.i.betweenRounds; }
   if(p.c){ $('#c-exercises').value=p.c.exercises; $('#c-work').value=p.c.work; $('#c-rest').value=p.c.rest; $('#c-rounds').value=p.c.rounds; $('#c-between-rounds').value=p.c.betweenRounds; }
   if(p.s){ $('#s-name').value=p.s.name||''; $('#s-sets').value=p.s.sets||3; $('#s-rest').value=p.s.rest||60; $('#s-work').value=p.s.work||0; $('#s-advance').value=p.s.advance||'manual'; }
+  activeExercises = p.exercises || []; // usato dal circuito per le immagini
   buildControllerFromUI(); resetClock();
 });
+
+/* Salvataggio preset utente */
 $('#btn-save').addEventListener('click', ()=>{
   const name = prompt('Nome del preset (es. "HIIT 40/20 x 3"):'); if(!name) return; const key='user:'+name.toLowerCase().replace(/\s+/g,'-'); const mode=$('#mode').value; const preset={mode};
   if(mode==='interval'){ preset.i={ work:+$('#int-work').value, rest:+$('#int-rest').value, stations:+$('#int-stations').value, rounds:+$('#int-rounds').value, betweenRounds:+$('#int-between-rounds').value }; }
-  else if(mode==='circuit'){ preset.c={ exercises:+$('#c-exercises').value, work:+$('#c-work').value, rest:+$('#c-rest').value, rounds:+$('#c-rounds').value, betweenRounds:+$('#c-between-rounds').value }; }
+  else if(mode==='circuit'){ preset.c={ exercises:+$('#c-exercises').value, work:+$('#c-work').value, rest:+$('#c-rest').value, rounds:+$('#c-rounds').value, betweenRounds:+$('#c-between-rounds').value }; preset.exercises = activeExercises; }
   else { preset.s={ name:$('#s-name').value, sets:+$('#s-sets').value, rest:+$('#s-rest').value, work:+$('#s-work').value, advance:$('#s-advance').value }; }
   localStorage.setItem('preset:'+key, JSON.stringify(preset)); renderSaved(); alert('Preset salvato!'); });
 function renderSaved(){ const list=$('#saved-list'); list.innerHTML=''; Object.keys(localStorage).filter(k=>k.startsWith('preset:user:')).forEach(k=>{
@@ -502,17 +444,34 @@ function renderSaved(){ const list=$('#saved-list'); list.innerHTML=''; Object.k
   small.textContent=desc; const left=document.createElement('div'); left.innerHTML=`<div style="font-weight:700">${title}</div>`; left.appendChild(small);
   const btns=document.createElement('div'); btns.className='btn-row'; const load=document.createElement('button'); load.textContent='Carica'; load.className='secondary';
   load.addEventListener('click', ()=>{ if(p.mode==='interval'){ $('#mode').value='interval'; updateConfigVisibility(); $('#int-work').value=p.i.work; $('#int-rest').value=p.i.rest; $('#int-stations').value=p.i.stations; $('#int-rounds').value=p.i.rounds; $('#int-between-rounds').value=p.i.betweenRounds; }
-    else if(p.mode==='circuit'){ $('#mode').value='circuit'; updateConfigVisibility(); $('#c-exercises').value=p.c.exercises; $('#c-work').value=p.c.work; $('#c-rest').value=p.c.rest; $('#c-rounds').value=p.c.rounds; $('#c-between-rounds').value=p.c.betweenRounds; }
+    else if(p.mode==='circuit'){ $('#mode').value='circuit'; updateConfigVisibility(); $('#c-exercises').value=p.c.exercises; $('#c-work').value=p.c.work; $('#c-rest').value=p.c.rest; $('#c-rounds').value=p.c.rounds; $('#c-between-rounds').value=p.c.betweenRounds; activeExercises = p.exercises || []; }
     else { $('#mode').value='sets'; updateConfigVisibility(); $('#s-name').value=p.s.name; $('#s-sets').value=p.s.sets; $('#s-rest').value=p.s.rest; $('#s-work').value=p.s.work; $('#s-advance').value=p.s.advance; } buildControllerFromUI(); resetClock(); });
   const del=document.createElement('button'); del.textContent='Elimina'; del.className='ghost'; del.addEventListener('click', ()=>{ localStorage.removeItem(k); renderSaved(); });
   btns.appendChild(load); btns.appendChild(del); div.appendChild(left); div.appendChild(btns); list.appendChild(div); }); }
-$('#btn-start').addEventListener('click', ()=>{ buildControllerFromUI(); start(); }); $('#btn-pause').addEventListener('click', pause); $('#btn-next').addEventListener('click', nextStep);
+renderSaved();
+
+/* Controls */
+$('#btn-start').addEventListener('click', ()=>{ buildControllerFromUI(); start(); });
+$('#btn-pause').addEventListener('click', pause);
+$('#btn-next').addEventListener('click', nextStep);
 $('#btn-reset').addEventListener('click', ()=>{ buildControllerFromUI(); controller.reset(); });
-document.addEventListener('keydown', (e)=>{ if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return; if(e.code==='Space'){ e.preventDefault(); pause(); } if(e.key.toLowerCase()==='n'){ e.preventDefault(); nextStep(); } if(e.key.toLowerCase()==='r'){ e.preventDefault(); buildControllerFromUI(); controller.reset(); } });
-updateConfigVisibility(); buildControllerFromUI(); renderSaved();
-setInterval(()=>{ let txt=''; if(controller instanceof IntervalController){ txt = `Round ${controller.round}/${controller.rounds} • Stazione ${controller.station}/${controller.stations} • ${controller.mode}`; }
-else if(controller instanceof CircuitController){ txt = `Round ${controller.round}/${controller.rounds} • Esercizio ${controller.ex}/${controller.exercises} • ${controller.mode}`; }
-else if(controller instanceof SetsController){ txt = `${controller.name} • Set ${controller.current}/${controller.sets} • ${controller.mode}`; } $('#substatus').textContent = txt; }, 200);
+document.addEventListener('keydown', (e)=>{ if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
+  if(e.code==='Space'){ e.preventDefault(); pause(); }
+  if(e.key.toLowerCase()==='n'){ e.preventDefault(); nextStep(); }
+  if(e.key.toLowerCase()==='r'){ e.preventDefault(); buildControllerFromUI(); controller.reset(); }
+});
+
+/* Init */
+function init(){
+  updateConfigVisibility(); buildControllerFromUI();
+  setInterval(()=>{ let txt='';
+    if(controller instanceof IntervalController){ txt = `Round ${controller.round}/${controller.rounds} • Stazione ${controller.station}/${controller.stations} • ${controller.mode}`; }
+    else if(controller instanceof CircuitController){ txt = `Round ${controller.round}/${controller.rounds} • Esercizio ${controller.ex}/${controller.exercises} • ${controller.mode}`; }
+    else if(controller instanceof SetsController){ txt = `${controller.name} • Set ${controller.current}/${controller.sets} • ${controller.mode}`; }
+    $('#substatus').textContent = txt;
+  }, 200);
+}
+init();
 </script>
 </body>
 </html>
