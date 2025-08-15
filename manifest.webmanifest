@@ -1,6 +1,6 @@
 {
-  "name": "Timer Allenamento",
-  "short_name": "Timer",
+  "name": "Timer Allenamento (Voce + Media)",
+  "short_name": "Timer Gym",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
