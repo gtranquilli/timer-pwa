@@ -2,38 +2,180 @@
   "defaults": {
     "work": 45,
     "rest": 30,
-    "rounds": 1
+    "rounds": 1,
+    "betweenRounds": 60
   },
   "presets": {
     "lunedi": {
-      "title": "Lunedì – Full Body dolce",
+      "title": "Lunedì – Circuito Full Body",
       "work": 45,
       "rest": 30,
-      "rounds": 1,
+      "rounds": 3,
+      "betweenRounds": 60,
       "exercises": [
         {
           "name": "Squat al muro",
-          "mediaUrl": "media/squat_muro.jpg"
+          "mediaUrl": "media/squat_muro.mp4"
         },
         {
           "name": "Spinte con manubri da seduta",
-          "mediaUrl": "media/spinte_seduta.jpg"
+          "mediaUrl": ["media/spinte_seduta_1.webp", "media/spinte_seduta_2.webp", "media/spinte_seduta_3.webp"]
         },
         {
           "name": "Ponte glutei",
-          "mediaUrl": "media/ponte_glutei.jpg"
+          "mediaUrl": "media/ponte_glutei.mp4"
         },
         {
-          "name": "Rematore con manubri",
-          "mediaUrl": "media/rematore_manubri.jpg"
+          "name": "Rematore con manubri (basso peso)",
+          "mediaUrl": "media/rematore_manubri.mp4"
         },
         {
-          "name": "Camminata sul posto (low impact)",
-          "mediaUrl": "media/camminata.jpg"
+          "name": "Camminata sul posto (ginocchia basse)",
+          "mediaUrl": "media/camminata.mp4"
         },
         {
-          "name": "Crunch base",
-          "mediaUrl": "media/crunch.jpg"
+          "name": "Crunch base su tappetino",
+          "mediaUrl": "media/crunch_base.mp4"
+        }
+      ]
+    },
+    "mercoledi": {
+      "title": "Mercoledì – HIIT Low Impact",
+      "work": 40,
+      "rest": 20,
+      "rounds": 2,
+      "betweenRounds": 120,
+      "exercises": [
+        {
+          "name": "Step up su gradino o scalino",
+          "mediaUrl": "media/step_up.mp4"
+        },
+        {
+          "name": "Slanci posteriori in quadrupedia",
+          "mediaUrl": "media/slanci_post.mp4"
+        },
+        {
+          "name": "Punch frontali con manubri leggeri",
+          "mediaUrl": "media/punch_frontali.mp4"
+        },
+        {
+          "name": "Side step con touch a terra",
+          "mediaUrl": "media/side_step_touch.mp4"
+        },
+        {
+          "name": "Superman a terra",
+          "mediaUrl": "media/superman.mp4"
+        },
+        {
+          "name": "Sit-up assistiti o crunch",
+          "mediaUrl": "media/sit_up.mp4"
+        }
+      ]
+    },
+    "venerdi": {
+      "title": "Venerdì – Lower body & Core",
+      "work": 45,
+      "rest": 30,
+      "rounds": 3,
+      "betweenRounds": 60,
+      "exercises": [
+        {
+          "name": "Ponte glutei con cavigliere",
+          "mediaUrl": "media/ponte_glutei_singolo.mp4"
+        },
+        {
+          "name": "Slanci laterali in piedi (con supporto)",
+          "mediaUrl": "media/slanci_laterali_1.webp"
+        },
+        {
+          "name": "Affondi indietro statici (con supporto)",
+          "mediaUrl": "media/affondi_indietro_1.mp4"
+        },
+        {
+          "name": "Russian Twist senza peso",
+          "mediaUrl": "media/russian_twist.mp4"
+        },
+        {
+          "name": "Plank sulle ginocchia",
+          "mediaUrl": "media/half_plank.webp"
+        }
+      ]
+    },
+    "stretching": {
+      "title": "Stretching – Full Body",
+      "work": 45,
+      "rest": 5,
+      "rounds": 1,
+      "betweenRounds": 0,
+      "exercises": [
+        {
+          "name": "Allungamento quadricipiti (in piedi, gamba piegata all’indietro)",
+          "mediaUrl": "media/stretch_quadricipiti.jpg"
+        },
+        {
+          "name": "Stretching glutei (seduto, gamba piegata)",
+          "mediaUrl": "media/stretch_glutei_1.webp"
+        },
+        {
+          "name": "Stretching glutei (seduto, gamba piegata)",
+          "mediaUrl": "media/stretch_glutei_2.webp"
+        },
+        {
+          "name": "Estensione schiena (cobra)",
+          "mediaUrl": "media/stretch_cobra.webp"
+        },
+        {
+          "name": "Stretching collo e spalle",
+          "mediaUrl": "media/stretch_collo.webp"
+        },
+        {
+          "name": "Stretching collo e spalle (variante)",
+          "mediaUrl": "media/stretch_spalle_1.webp"
+        },
+        {
+          "name": "Stretching collo e spalle (variante)",
+          "mediaUrl": "media/stretch_spalle_2.webp"
+        },
+        {
+          "name": "Stretching collo e spalle (variante)",
+          "mediaUrl": "media/stretch_spalle_4.webp"
+        },
+        {
+          "name": "Stretching collo e spalle (variante)",
+          "mediaUrl": "media/stretch_spalle_5.webp"
+        },
+        {
+          "name": "Respirazione diaframmatica (supina, mani sulla pancia)",
+          "mediaUrl": "media/stretch_.webp"
+        }
+      ]
+    },
+    "riscaldamento": {
+      "title": "Riscaldamento",
+      "work": 45,
+      "rest": 5,
+      "rounds": 1,
+      "betweenRounds": 0,
+      "exercises": [
+        {
+          "name": "Marcia sul posto (ginocchia alte)",
+          "mediaUrl": "media/camminata.webp"
+        },
+        {
+          "name": "Circonduzioni braccia (avanti e indietro)",
+          "mediaUrl": "media/circonduzioni_braccia.mp4"
+        },
+        {
+          "name": "Torsioni del busto (in piedi, mani sui fianchi)",
+          "mediaUrl": "media/torsioni_del_busto.mp4"
+        },
+        {
+          "name": "Mezzi squat (squat lento con braccia in alto)",
+          "mediaUrl": "media/mezzi_squat.mp4"
+        },
+        {
+          "name": "Slanci gmabe",
+          "mediaUrl": "media/slanci_avanti.mp4"
         }
       ]
     }
