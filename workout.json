@@ -1,0 +1,41 @@
+{
+  "defaults": {
+    "work": 45,
+    "rest": 30,
+    "rounds": 1
+  },
+  "presets": {
+    "lunedi": {
+      "title": "Lunedì – Full Body dolce",
+      "work": 45,
+      "rest": 30,
+      "rounds": 1,
+      "exercises": [
+        {
+          "name": "Squat al muro",
+          "mediaUrl": "media/squat_muro.jpg"
+        },
+        {
+          "name": "Spinte con manubri da seduta",
+          "mediaUrl": "media/spinte_seduta.jpg"
+        },
+        {
+          "name": "Ponte glutei",
+          "mediaUrl": "media/ponte_glutei.jpg"
+        },
+        {
+          "name": "Rematore con manubri",
+          "mediaUrl": "media/rematore_manubri.jpg"
+        },
+        {
+          "name": "Camminata sul posto (low impact)",
+          "mediaUrl": "media/camminata.jpg"
+        },
+        {
+          "name": "Crunch base",
+          "mediaUrl": "media/crunch.jpg"
+        }
+      ]
+    }
+  }
+}

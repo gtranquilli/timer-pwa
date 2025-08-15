@@ -1,6 +1,6 @@
 {
-  "name": "Timer Allenamento (Voce + Media)",
-  "short_name": "Timer Gym",
+  "name": "Timer Allenamento – Preset + BG",
+  "short_name": "Timer",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
