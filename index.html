@@ -296,13 +296,24 @@ $('#beep-volume').addEventListener('input', e=>{ ensureAudio(); masterGain.gain.
 /* === Slideshow helpers (multi-image per esercizio) === */
 const SLIDESHOW = { timer:null, idx:0, list:[], interval:2500 };// 2.5s
 const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
-const VID_EXT = /\.(mp4|webm|mov)$/i;
+const VID_EXT = /\.(mp4|webm)$/i;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const COUNTDOWN_T = IS_IOS ? 3.6 : 3.1; // un filo prima su iOS
-
-
-function isImageUrl(u){ return IMG_EXT.test(u||""); }
-function isVideoUrl(u){ return /\.mp4$/i.test(u||""); } // preferiamo mp4 per compatibilità
+// --- Normalizzazione URL (stringa/array/CSV) ---
+function toStr(u){
+  if (typeof u === 'string') return u.trim();
+  if (Array.isArray(u)) return toStr(u[0]);
+  if (u && typeof u === 'object' && 'url' in u) return String(u.url);
+  return u == null ? '' : String(u);
+}
+function splitMaybeList(s){
+  const str = toStr(s);
+  if (!str) return [];
+  // spezza "a,b,c" -> ["a","b","c"]
+  return str.split(',').map(x=>x.trim()).filter(Boolean);
+}
+function isImageUrl(u){ return IMG_EXT.test(toStr(u)); }
+function isVideoUrl(u){ return VID_EXT.test(toStr(u)); }
 
 function preloadExerciseImages(ex, max=2){
   if(!ex) return;
@@ -342,24 +353,27 @@ function startImageSlideshow(list){
 }
 
 function expandNumberedSeries(seedUrl){
-  // se il seed finisce con _N.webp/jpg, completa la serie finché i file esistono
-  const m = (seedUrl||"").match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
+  const seed = splitMaybeList(seedUrl)[0];
+  const m = (seed||"").match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
   if(!m) return;
   const base = m[1], ext = m[3].toLowerCase();
-  const max = 16;
-  for(let n=1; n<=max; n++){
+  const max = 8;   // limitiamo i tentativi
+  let misses = 0;  // ferma dopo il primo buco per ridurre 404 a raffica
+  for(let n=1; n<=max && misses<1; n++){
     const candidate = `${base}_${n}.${ext}`;
-    // evita duplicati e verifica esistenza con preload
-    if(SLIDESHOW.list.includes(candidate)) continue;
+    if (SLIDESHOW.list.includes(candidate)) continue;
     const im = new Image();
-    im.onload = ()=>{ if(!SLIDESHOW.list.includes(candidate)) SLIDESHOW.list.push(candidate); };
-    im.onerror = ()=>{};
+    im.onload  = ()=>{ if(!SLIDESHOW.list.includes(candidate)) SLIDESHOW.list.push(candidate); };
+    im.onerror = ()=>{ misses++; };
     im.src = candidate;
   }
 }
 
+
 // Mostra una "sequenza" per un esercizio: video singolo o slideshow immagini.
 // opts: { rotate: boolean } -> se false, mostra solo la prima immagine
+/* === Slideshow helpers (multi-image per esercizio) === */
+/* === Slideshow helpers (multi-image per esercizio) === */
 function showExerciseMedia(ex, badge='', opts={}){
   stopSlideshow();
   mediaEl.badge.textContent = badge || '';
@@ -367,18 +381,20 @@ function showExerciseMedia(ex, badge='', opts={}){
   const prefer = opts.prefer || 'auto';
   if (!ex){ showMedia(null, badge); return; }
 
-  // costruisci lista dai campi "media" (array) o "mediaUrl" (singolo)
-  const list = [];
-  if (Array.isArray(ex.media)) list.push(...ex.media);
-  if (ex.mediaUrl) list.push(ex.mediaUrl);
+  // --- Normalizza qualsiasi forma di input (stringa/CSV/array) ---
+  const raw = [];
+  if (Array.isArray(ex.media)) raw.push(...ex.media);
+  else if (ex.media)          raw.push(...splitMaybeList(ex.media));
+  if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
+  const flat = raw.map(toStr).filter(Boolean);
 
-  const videos = list.filter(u => isVideoUrl(u));
-  let images   = list.filter(u => isImageUrl(u));
-  if (!images.length && ex.mediaUrl && isImageUrl(ex.mediaUrl)) images = [ex.mediaUrl];
+  const videos = flat.filter(u => isVideoUrl(u));
+  let   images = flat.filter(u => isImageUrl(u));
+  if (!images.length && ex.mediaUrl && isImageUrl(ex.mediaUrl)) images = [toStr(ex.mediaUrl)];
 
   function showImages(arr){
     if (!arr || !arr.length){ showMedia(null, badge); return; }
-    // se l'immagine ha suffisso _1.webp, prova ad espandere in _2, _3, ...
+    // se il primo è ..._1.webp/jpg prova a espandere ..._2, ..._3
     if (/_\d+\.(webp|png|jpe?g)$/i.test(arr[0])) {
       SLIDESHOW.list = arr.slice();
       if (rotate) startImageSlideshow(SLIDESHOW.list); else showImage(arr[0]);
@@ -399,13 +415,25 @@ function showExerciseMedia(ex, badge='', opts={}){
   showMedia(null, badge);
 }
 
+
 const mediaEl={box:$('#media'),img:$('#media-img'),vid:$('#media-video'),badge:$('#media-badge'),next:$('#media-next')};
-function showImage(src){ mediaEl.vid.pause(); mediaEl.vid.removeAttribute('src'); mediaEl.vid.style.display='none'; mediaEl.img.src=src; mediaEl.img.style.display='block'; }
+function showImage(src){
+  const url = splitMaybeList(src)[0]; // evita "a,b,c"
+  mediaEl.video.pause(); mediaEl.video.src=''; mediaEl.video.style.display='none';
+  mediaEl.img.style.display='';
+  mediaEl.img.src = url || ''; // stringa sicura
+}
 function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
 function showMedia(obj,badge=''){ if(!obj||!obj.mediaUrl){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.badge.textContent=badge||''; mediaEl.next.textContent='—'; return; }
   if(obj.mediaUrl.endsWith('.mp4')) showVideo(obj.mediaUrl); else showImage(obj.mediaUrl); mediaEl.badge.textContent=badge||''; }
 function setNextName(name){ mediaEl.next.textContent=name||'—'; }
-function preloadImage(src){ if(!src || src.endsWith('.mp4')) return; const im=new Image(); im.src=src; }
+
+function preloadImage(src){
+  const url = splitMaybeList(src)[0]; // prendi una sola URL
+  if (!url) return;
+  const im = new Image();
+  im.src = url;
+}
 
 /* Dati workout + catalogo */
 let WORKCFG=null, PRESETS_FILE={}, EX_CATALOG=[], activeExercises=[];
