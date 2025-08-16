@@ -4,176 +4,227 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Catalogo esercizi</title>
-<meta name="theme-color" content="#0f1115">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico">
 <style>
-  :root{ --bg:#0f1115; --panel:#171a21; --accent:#68d391; --accent2:#61dafb; --muted:#a0aec0; --text:#e2e8f0; }
+  :root{ --bg:#0f1115; --panel:#171a21; --muted:#9aa7bb; --text:#e2e8f0; --accent:#68d391; }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#0f1115; color:var(--text); }
-  header{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid #222631; background:#11141b; position:sticky; top:0; }
-  h1{ font-size:18px; margin:0 }
-  a{ color:var(--accent2); text-decoration:none }
-  .wrap{ padding:16px; max-width:1200px; margin:0 auto }
-  .tools{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap }
-  input{ width:280px; max-width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2b3040; background:#0d0f14; color:#e2e8f0; outline:none; }
-  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px }
-  .card{ border:1px solid #2b3040; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border-radius:12px; overflow:hidden }
-  .media{ position:relative; width:100%; aspect-ratio:1/1; background:#0b0f15; }
-  .media img,.media video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block }
-  .name{ padding:10px; font-size:13px; color:#c9d2e3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-  .badge{ position:absolute; left:8px; bottom:8px; font-size:11px; padding:3px 6px; border-radius:999px; border:1px solid #2b3040; background:rgba(15,17,24,.8) }
-  footer{ padding:14px 16px; color:#8693a6; border-top:1px solid #222631; font-size:12px; margin-top:20px }
+  body{margin:0;background:#0f1115;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#121621,#0f1115);
+    border-bottom:1px solid #23293a;padding:14px 16px}
+  h1{margin:0 0 6px 0;font-size:20px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  input[type="search"]{flex:1;min-width:220px;padding:10px 12px;border-radius:10px;border:1px solid #2b3040;background:#0d0f14;color:#e2e8f0;outline:none}
+  .badge{padding:8px 10px;border:1px solid #2b3040;border-radius:10px;background:#0d0f14;color:#c9d2e3;cursor:pointer}
+  .badge.active{border-color:#2fbf7f;background:#14231c;color:#aef4c4}
+  main{padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+    border:1px solid #23293a;border-radius:12px;overflow:hidden}
+  .thumb{position:relative;width:100%;aspect-ratio:1/1;background:#0b0f15}
+  .thumb img,.thumb video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .name{padding:10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .muted{color:var(--muted);font-size:12px}
+  .count{margin:8px 0 16px 0;color:var(--muted);font-size:12px}
+
+  /* Modal viewer */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+  .modal.open{display:flex}
+  .viewer{position:relative;width:min(92vw,1100px);background:#0d0f14;border:1px solid #2b3040;border-radius:14px;overflow:hidden}
+  .viewer header{position:relative;border:0;background:#111522;padding:10px 14px}
+  .viewer .title{font-weight:700}
+  .viewer .stage{position:relative;width:100%;aspect-ratio:16/9;background:#000}
+  .viewer .stage img,.viewer .stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .viewer footer{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid #22273a}
+  .btn{padding:8px 10px;border:1px solid #2b3040;border-radius:10px;background:#121723;color:#d6e0ef;cursor:pointer}
+  .btn.primary{border-color:#2fbf7f;background:#16281f;color:#c6ffdf}
+  .nav{display:flex;gap:8px}
 </style>
 </head>
 <body>
 <header>
   <h1>Catalogo esercizi</h1>
-  <div><a href="index.html">← Torna al timer</a></div>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Cerca esercizio… (ad es. squat, step, glutei)">
+    <button class="badge active" data-filter="tutti">Tutti</button>
+    <button class="badge" data-filter="lunedi">Lunedì</button>
+    <button class="badge" data-filter="mercoledi">Mercoledì</button>
+    <button class="badge" data-filter="venerdi">Venerdì</button>
+    <button class="badge" data-filter="stretching">Stretching</button>
+    <button class="badge" data-filter="riscaldamento">Riscaldamento</button>
+    <a class="badge" href="./" title="Torna all’app">↩ App</a>
+  </div>
 </header>
 
-<div class="wrap">
-  <div class="tools">
-    <input id="search" type="search" placeholder="Cerca esercizio...">
-  </div>
+<main>
+  <div class="count" id="count">—</div>
   <div class="grid" id="grid"></div>
+</main>
+
+<!-- Modal viewer -->
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="viewer" role="dialog" aria-modal="true">
+    <header><div class="title" id="v-title">—</div></header>
+    <div class="stage">
+      <img id="v-img" alt="">
+      <video id="v-video" controls playsinline></video>
+    </div>
+    <footer>
+      <div class="muted" id="v-index">—</div>
+      <div class="nav">
+        <button class="btn" id="btn-prev">◀ Prev</button>
+        <button class="btn primary" id="btn-next">Next ▶</button>
+        <button class="btn" id="btn-close">Chiudi</button>
+      </div>
+    </footer>
+  </div>
 </div>
 
-<footer>
-  Fonte: <code>workout.json</code>. Se vuoi includere anche media “orfani”, crea <code>media/media-index.json</code> (vedi nota nel codice).
-</footer>
-
 <script>
-// --- Helper
-const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
-const VID_EXT = /\.(mp4|webm)$/i; // niente .mov
+const IMG_RE = /\.(webp|png|jpe?g|gif)$/i;
+const VID_RE = /\.(mp4|webm)$/i; // niente .mov
 const PLACEHOLDER = 'media/placeholder.png';
+
 const $ = s => document.querySelector(s);
-function toStr(u){ if(typeof u==='string') return u.trim(); if(Array.isArray(u)) return toStr(u[0]); if(u && typeof u==='object' && 'url' in u) return String(u.url); return u==null?'':String(u); }
-function splitMaybeList(s){ const str=toStr(s); return !str?[]:str.split(',').map(x=>x.trim()).filter(Boolean); }
-function isImageUrl(u){ return IMG_EXT.test(toStr(u)); }
-function isVideoUrl(u){ return VID_EXT.test(toStr(u)); }
 
-function normalizeExercise(ex){
-  const raw = [];
-  if (Array.isArray(ex.media))     raw.push(...ex.media);
-  else if (ex.media)               raw.push(...splitMaybeList(ex.media));
-  if (Array.isArray(ex.mediaUrl))  raw.push(...ex.mediaUrl);
-  else if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
-  const flat   = raw.map(toStr).filter(Boolean);
-  const images = flat.filter(isImageUrl);
-  const videos = flat.filter(isVideoUrl);
-  return { name: ex.name || '(senza nome)', images, videos, all: flat };
+// normalizza qualunque campo media in array di stringhe
+function mediaList(ex){
+  const a = [];
+  if (Array.isArray(ex.media)) a.push(...ex.media);
+  if (Array.isArray(ex.mediaUrl)) a.push(...ex.mediaUrl);
+  else if (typeof ex.mediaUrl === 'string') a.push(...ex.mediaUrl.split(',').map(s=>s.trim()).filter(Boolean));
+  return Array.from(new Set(a)); // dedup
 }
+function firstImage(list){ return list.find(u=>IMG_RE.test(u)) || null; }
+function firstVideo(list){ return list.find(u=>VID_RE.test(u)) || null; }
 
-
-// Facoltativo: indicizza file non presenti nel workout.json
-// Per abilitarlo, genera il file con PowerShell da Windows nella root del progetto:
-//   Get-ChildItem -Path "media" -File | Select-Object -ExpandProperty Name | ConvertTo-Json | Out-File "media/media-index.json" -Encoding utf8
-async function tryLoadMediaIndex(){
-  try {
-    const r = await fetch('media/media-index.json', {cache:'no-store'});
-    if(!r.ok) return [];
-    const arr = await r.json();
-    if(!Array.isArray(arr)) return [];
-    return arr.map(n => 'media/'+n);
-  } catch { return []; }
-}
-
-function filenameBaseName(p){
-  const n = p.split('/').pop();               // file.ext
-  const core = n.replace(/\.[^.]+$/, '');     // file
-  const base = core.replace(/_\d+$/,'');      // file (senza _1/_2)
-  return base;
-}
-function baseToDisplayName(base){
-  return base.replace(/_/g,' ').replace(/\s+/g,' ').trim();
-}
-
-function renderCard(holder, ex){
-  const card = document.createElement('div'); card.className='card';
-  const media = document.createElement('div'); media.className='media';
-  const name  = document.createElement('div'); name.className='name'; name.textContent = ex.name;
-
-  // Mostra priorità: immagine -> video -> placeholder
-  if(ex.images.length){
-    const img = document.createElement('img'); img.src = ex.images[0]; img.alt = ex.name;
-    media.appendChild(img);
-    const b = document.createElement('div'); b.className='badge'; b.textContent = ex.images.length>1 ? `+${ex.images.length-1}` : 'img';
-    media.appendChild(b);
-  } else if(ex.videos.length){
-    const vid = document.createElement('video'); vid.src = ex.videos[0]; vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true;
-    media.appendChild(vid);
-    const b = document.createElement('div'); b.className='badge'; b.textContent = 'video';
-    media.appendChild(b);
-  } else {
-    const img = document.createElement('img'); img.src = PLACEHOLDER; img.alt = ex.name;
-    media.appendChild(img);
-    const b = document.createElement('div'); b.className='badge'; b.textContent = '—';
-    media.appendChild(b);
-  }
-
-  card.appendChild(media); card.appendChild(name);
-  holder.appendChild(card);
-}
-
-async function boot(){
-  const grid = $('#grid');
-  const search = $('#search');
-  // 1) raccogli da workout.json
-  const map = new Map(); // name -> {name, images[], videos[]}
-  try{
-    const data = await fetch('workout.json', {cache:'no-store'}).then(r=>r.json());
-    if(data && data.presets){
-      for(const key of Object.keys(data.presets)){
-        const preset = data.presets[key];
-        (preset.exercises||[]).forEach(ex=>{
-          const k = (ex.name||'').trim();
-          const cur = map.get(k) || { name:k, images:[], videos:[], all:[] };
-          const nrm = normalizeExercise(ex);
-          cur.images.push(...nrm.images); cur.videos.push(...nrm.videos); cur.all.push(...nrm.all);
-          map.set(k, cur);
-        });
-      }
+// stato viewer
+const Viewer = {
+  open:false, name:'', items:[], idx:0,
+  els: { modal:$('#modal'), img:$('#v-img'), vid:$('#v-video'), title:$('#v-title'), index:$('#v-index') },
+  show(idx){
+    this.idx = (idx+this.items.length)%this.items.length;
+    const url = this.items[this.idx];
+    const isImg = IMG_RE.test(url);
+    this.els.title.textContent = this.name;
+    this.els.index.textContent = `${this.idx+1} / ${this.items.length}`;
+    if (isImg){
+      this.els.vid.pause(); this.els.vid.removeAttribute('src'); this.els.vid.style.display='none';
+      this.els.img.src = url; this.els.img.style.display='block';
+    } else {
+      this.els.img.removeAttribute('src'); this.els.img.style.display='none';
+      this.els.vid.src = url; this.els.vid.style.display='block'; this.els.vid.play().catch(()=>{});
     }
-  }catch(e){ console.warn('workout.json non caricato', e); }
-
-  // 2) (opzionale) aggiungi media “orfani” se esiste media-index.json
-  const mediaIndex = await tryLoadMediaIndex();
-  if(mediaIndex.length){
-    // raggruppa per base (senza _1/_2, senza estensione)
-    const groups = new Map(); // base -> {images:[], videos:[]}
-    for(const p of mediaIndex){
-      const base = filenameBaseName(p);
-      const g = groups.get(base) || {images:[], videos:[]};
-      (isImageUrl(p) ? g.images : (isVideoUrl(p) ? g.videos : null))?.push(p);
-      groups.set(base, g);
-    }
-    for(const [base, g] of groups){
-      const display = baseToDisplayName(base);
-      if(!map.has(display)){
-        map.set(display, { name: display, images: g.images, videos: g.videos, all:[...g.images, ...g.videos] });
-      }
-    }
+  },
+  openWith(name, items){
+    if(!items || !items.length) return;
+    this.name=name; this.items=items.slice(); this.idx=0;
+    this.els.modal.classList.add('open'); this.open=true; this.show(0);
+  },
+  close(){
+    this.open=false; this.els.modal.classList.remove('open');
+    this.els.vid.pause(); this.els.vid.removeAttribute('src'); this.els.img.removeAttribute('src');
   }
+};
+// nav viewer
+$('#btn-next').onclick = ()=> Viewer.show(Viewer.idx+1);
+$('#btn-prev').onclick = ()=> Viewer.show(Viewer.idx-1);
+$('#btn-close').onclick = ()=> Viewer.close();
+$('#modal').addEventListener('click', (e)=>{ if(e.target.id==='modal') Viewer.close(); });
+document.addEventListener('keydown', (e)=>{
+  if(!Viewer.open) return;
+  if(e.key==='Escape') Viewer.close();
+  if(e.key==='ArrowRight') Viewer.show(Viewer.idx+1);
+  if(e.key==='ArrowLeft') Viewer.show(Viewer.idx-1);
+});
 
-  // 3) render + filtro
-  const all = Array.from(map.values()).sort((a,b)=> a.name.localeCompare(b.name,'it'));
-  function render(list){
-    grid.innerHTML='';
-    list.forEach(ex => renderCard(grid, ex));
-  }
-  render(all);
+// filtro per preset (badge)
+let activeFilter = 'tutti';
+document.querySelectorAll('.badge[data-filter]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.badge[data-filter]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    activeFilter = b.dataset.filter;
+    render();
+  });
+});
 
-  search.addEventListener('input', e=>{
-    const q = e.target.value.trim().toLowerCase();
-    if(!q) return render(all);
-    const f = all.filter(ex => ex.name.toLowerCase().includes(q));
-    render(f);
+// ricerca
+$('#q').addEventListener('input', render);
+
+// dati
+let EXERCISES = []; // {name, media[], presets:Set}
+function buildFromJSON(data){
+  const map = new Map(); // name -> {name, media:Set, presets:Set}
+  const presets = data.presets || {};
+  Object.keys(presets).forEach(presetName=>{
+    const arr = presets[presetName]?.exercises || [];
+    arr.forEach(ex=>{
+      if(!ex?.name) return;
+      if(!map.has(ex.name)) map.set(ex.name, { name: ex.name, media: new Set(), presets: new Set() });
+      const entry = map.get(ex.name);
+      mediaList(ex).forEach(u=>entry.media.add(u));
+      entry.presets.add(presetName);
+    });
+  });
+  EXERCISES = Array.from(map.values()).map(e=>({
+    name: e.name,
+    media: Array.from(e.media),
+    presets: Array.from(e.presets)
+  })).sort((a,b)=> a.name.localeCompare(b.name,'it'));
+}
+
+function matchesFilter(ex){
+  if(activeFilter==='tutti') return true;
+  return ex.presets.includes(activeFilter);
+}
+
+function render(){
+  const q = ($('#q').value||'').trim().toLowerCase();
+  const grid = $('#grid'); grid.innerHTML='';
+  const list = EXERCISES.filter(ex=>{
+    const okF = matchesFilter(ex);
+    const okQ = !q || ex.name.toLowerCase().includes(q);
+    return okF && okQ;
+  });
+
+  $('#count').textContent = `${list.length} esercizi`;
+
+  list.forEach(ex=>{
+    const m = ex.media;
+    const img = firstImage(m);
+    const vid = firstVideo(m);
+    const thumb = img || PLACEHOLDER;
+
+    const card = document.createElement('div'); card.className='card';
+    const th = document.createElement('div'); th.className='thumb';
+    const im = document.createElement('img'); im.src = thumb; im.alt = ex.name;
+    th.appendChild(im);
+
+    // anteprima video su hover se c'è un video
+    if(vid){
+      const pv = document.createElement('video');
+      pv.src = vid; pv.muted = true; pv.loop = true; pv.playsInline = true; pv.style.display='none';
+      th.appendChild(pv);
+      th.addEventListener('mouseenter', ()=>{ pv.style.display='block'; pv.play().catch(()=>{}); });
+      th.addEventListener('mouseleave', ()=>{ pv.pause(); pv.style.display='none'; });
+    }
+
+    const name = document.createElement('div'); name.className='name'; name.textContent = ex.name;
+
+    card.appendChild(th); card.appendChild(name); grid.appendChild(card);
+
+    // click -> viewer con tutta la media list (immagini+video, nell’ordine fornito)
+    card.addEventListener('click', ()=> Viewer.openWith(ex.name, ex.media.length? ex.media : [PLACEHOLDER]));
   });
 }
 
-boot();
+fetch('workout.json')
+  .then(r=>r.json())
+  .then(data=>{ buildFromJSON(data); render(); })
+  .catch(err=>{
+    console.error('Errore caricamento workout.json', err);
+    $('#count').textContent = 'Errore nel caricamento dei dati.';
+  });
 </script>
 </body>
 </html>

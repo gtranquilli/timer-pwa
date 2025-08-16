@@ -365,7 +365,7 @@ function startImageSlideshow(list){
 
 // Limita tentativi e fermati al primo buco (_1, _2, ... )
 function expandNumberedSeries(seedUrl){
-  const seed = splitMaybeList(seedUrl)[0];
+  /* const seed = splitMaybeList(seedUrl)[0];
   const m = (seed||"").match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
   if(!m) return;
   const base = m[1], ext = m[3].toLowerCase();
@@ -378,7 +378,8 @@ function expandNumberedSeries(seedUrl){
     im.onload  = ()=>{ if(!SLIDESHOW.list.includes(candidate)) SLIDESHOW.list.push(candidate); };
     im.onerror = ()=>{ misses++; };
     im.src = candidate;
-  }
+  } */
+ return; // disabilitato per ora, non serve più
 }
 
 const PLACEHOLDER = 'media/placeholder.png';
@@ -409,15 +410,17 @@ function showExerciseMedia(ex, badge='', opts={}){
 
   function showImages(arr){
     if (!arr || !arr.length){ showImage('media/placeholder.png'); return; }
+    // Se i nomi sono numerati, usiamo SOLO quelli forniti, niente autoguess
     if (/_\d+\.(webp|png|jpe?g)$/i.test(arr[0])) {
       SLIDESHOW.list = arr.slice();
-      if (rotate) startImageSlideshow(SLIDESHOW.list); else showImage(arr[0]);
-      expandNumberedSeries(arr[0]);
+      if (rotate) startImageSlideshow(SLIDESHOW.list);
+      else showImage(arr[0]);
     } else {
       if (rotate && arr.length > 1) startImageSlideshow(arr);
       else showImage(arr[0]);
     }
   }
+
 
   if (prefer === 'video'  && videos.length){ showVideo(videos[0]); return; }
   if (prefer === 'images' && images.length){ showImages(images);  return; }
@@ -479,6 +482,7 @@ fetch('workout.json').then(r=>r.json()).then(data=>{
       if(!$('#preset').querySelector(`option[value="${k}"]`)){
         const opt=document.createElement('option'); opt.value=k; opt.textContent=p.title||k; $('#preset').appendChild(opt);
       }
+      // 👇 aggiungi tutti gli esercizi al catalogo evitando duplicati per nome
       (p.exercises||[]).forEach(ex=>{
         if(!EX_CATALOG.find(e=>e.name===ex.name)) EX_CATALOG.push(ex);
       });
@@ -492,23 +496,31 @@ function renderCatalog(){
   const grid=$('#catalog-grid'); if(!grid) return; grid.innerHTML='';
   EX_CATALOG.forEach(ex=>{
     const card=document.createElement('div'); card.className='ex-card';
+
+    // normalizza: media[] + mediaUrl (stringa/array/CSV)
     const srcList =
-      Array.isArray(ex.media) ? ex.media :
-      Array.isArray(ex.mediaUrl) ? ex.mediaUrl :
+      Array.isArray(ex.media)     ? ex.media :
+      Array.isArray(ex.mediaUrl)  ? ex.mediaUrl :
       (ex.mediaUrl ? String(ex.mediaUrl).split(',').map(s=>s.trim()) : []);
+
+    // thumbnail: prima immagine, altrimenti placeholder
     const thumb = srcList.find(u => /\.(webp|png|jpe?g|gif)$/i.test(u||'')) || 'media/placeholder.png';
+
     const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;
     const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
 
     card.appendChild(img); card.appendChild(name); grid.appendChild(card);
+
+    // click: anteprima nel player principale (slideshow se più immagini)
     card.addEventListener('click', ()=>{
       $('#tab-timer').click();
       showExerciseMedia(ex,'Anteprima',{rotate:true, prefer:'images'});
       setNextName('—');
       Speech.say(ex.name);
-    });  
+    });
   });
 }
+
 
 /* Timer base */
 let running=false; let startStamp=null; let totalElapsed=0; let tickHandle=null;
