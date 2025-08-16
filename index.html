@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/logotras.png">
+<link rel="icon" href="icons/logotras.png" type="image/png" sizes="32x32">
+
 <style>
   :root{ --bg:#0f1115; --panel:#171a21; --accent:#68d391; --accent2:#61dafb; --danger:#ff6b6b; --muted:#a0aec0; --text:#e2e8f0; }
   *{box-sizing:border-box}
@@ -444,9 +446,23 @@ function showImage(src){
   mediaEl.img.style.display=''; mediaEl.img.src = url;
 }
 
-function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
-function showMedia(obj,badge=''){ if(!obj||!obj.mediaUrl){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.badge.textContent=badge||''; mediaEl.next.textContent='—'; return; }
-  if(obj.mediaUrl.endsWith('.mp4')) showVideo(obj.mediaUrl); else showImage(obj.mediaUrl); mediaEl.badge.textContent=badge||''; }
+function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none';
+  mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); 
+}
+
+function showMedia(obj,badge=''){
+  mediaEl.badge.textContent = badge || '';
+  if(!obj){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.next.textContent='—'; return; }
+  const list =
+    Array.isArray(obj.media) ? obj.media :
+    Array.isArray(obj.mediaUrl) ? obj.mediaUrl :
+    splitMaybeList(obj.mediaUrl);
+  const first = (list && list[0]) ? list[0] : '';
+  if (isVideoUrl(first))      showVideo(first);
+  else if (isImageUrl(first)) showImage(first);
+  else                        showImage(PLACEHOLDER);
+}
+
 function setNextName(name){ mediaEl.next.textContent=name||'—'; }
 
 
@@ -478,18 +494,23 @@ fetch('workout.json').then(r=>r.json()).then(data=>{
 function renderCatalog(){
   const grid=$('#catalog-grid'); if(!grid) return; grid.innerHTML='';
   EX_CATALOG.forEach(ex=>{
-    const card=document.createElement('div'); card.className='ex-card';
-    const srcList = Array.isArray(ex.media) ? ex.media : (ex.mediaUrl ? [ex.mediaUrl] : []);
+  const card=document.createElement('div'); card.className='ex-card';
+  const srcList =
+    Array.isArray(ex.media) ? ex.media :
+    Array.isArray(ex.mediaUrl) ? ex.mediaUrl :
+    (ex.mediaUrl ? String(ex.mediaUrl).split(',').map(s=>s.trim()) : []);
     const thumb = srcList[0] || 'media/placeholder.png';
-    const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;   
+    const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;
     const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
+
     card.appendChild(img); card.appendChild(name); grid.appendChild(card);
     card.addEventListener('click', ()=>{
-    $('#tab-timer').click();
-    showExerciseMedia(ex,'Anteprima',{rotate:true, prefer:'images'});
-    setNextName('—');
-    Speech.say(ex.name);
-  });  });
+      $('#tab-timer').click();
+      showExerciseMedia(ex,'Anteprima',{rotate:true, prefer:'images'});
+      setNextName('—');
+      Speech.say(ex.name);
+    });  
+  });
 }
 
 /* Timer base */

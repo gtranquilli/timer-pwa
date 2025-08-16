@@ -55,16 +55,17 @@ function isImageUrl(u){ return IMG_EXT.test(toStr(u)); }
 function isVideoUrl(u){ return VID_EXT.test(toStr(u)); }
 
 function normalizeExercise(ex){
-  // Unifica media[] e/o mediaUrl (string/CSV)
   const raw = [];
-  if (Array.isArray(ex.media)) raw.push(...ex.media);
-  else if (ex.media)          raw.push(...splitMaybeList(ex.media));
-  if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
-  const flat = raw.map(toStr).filter(Boolean);
-  const imgs = flat.filter(isImageUrl);
-  const vids = flat.filter(isVideoUrl);
+  if (Array.isArray(ex.media))     raw.push(...ex.media);
+  else if (ex.media)               raw.push(...splitMaybeList(ex.media));
+  if (Array.isArray(ex.mediaUrl))  raw.push(...ex.mediaUrl);
+  else if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
+  const flat  = raw.map(toStr).filter(Boolean);
+  const imgs  = flat.filter(isImageUrl);
+  const vids  = flat.filter(isVideoUrl);
   return { name: ex.name || '(senza nome)', images: imgs, videos: vids, all: flat };
 }
+
 
 // Facoltativo: indicizza file non presenti nel workout.json
 // Per abilitarlo, genera il file con PowerShell da Windows nella root del progetto:

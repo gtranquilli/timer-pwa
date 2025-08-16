@@ -42,12 +42,28 @@ async function trimRuntimeCache(maxEntries = MAX_RUNTIME_ENTRIES) {
 }
 
 async function cacheFirst(req) {
-  const cached = await caches.match(req);
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(req, { ignoreVary: true });
   if (cached) return cached;
-  const net = await fetch(req);
-  const cache = await caches.open(RUNTIME_CACHE);
-  try { cache.put(req, net.clone()); trimRuntimeCache(); } catch (e) {}
-  return net;
+
+  const res = await fetch(req);
+
+  // Metti in cache solo 200 OK, richieste GET, risposte "basic" (stessa origine)
+  if (
+    req.method === 'GET' &&
+    res &&
+    res.ok &&
+    res.status === 200 &&
+    res.type === 'basic'
+  ) {
+    try {
+      await cache.put(req, res.clone());
+    } catch (e) {
+      // ignora errori di put (per sicurezza)
+      console.warn('Cache put skipped:', e);
+    }
+  }
+  return res;
 }
 
 async function staleWhileRevalidate(req) {
@@ -67,10 +83,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   const isSameOrigin = url.origin === self.location.origin;
 
-  // immagini/video (anche cross-origin) → cache-first
-  const isMedia = request.destination === 'image' || request.destination === 'video' ||
-                  url.pathname.includes('/media/') ||
-                  /\.(?:png|jpg|jpeg|webp|gif|svg|mp4|mov)$/i.test(url.pathname);
+  // bypassa richieste video/audio o con header Range (non cacheabili)
+  const isVideoOrAudio = /\.(?:mp4|mov|webm|mp3|ogg|wav)$/i.test(url.pathname);
+  const isRange = request.headers.has('range');
 
   // dati (workout.json) → stale-while-revalidate
   const isWorkoutData = isSameOrigin && url.pathname.endsWith('/workout.json');
@@ -83,7 +98,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isMedia) {
+  if (isVideoOrAudio || isRange) {
+    // niente cache per i media stream parziali
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (request.destination === 'image' || url.pathname.includes('/media/')) {
+    // immagini → cache-first
     event.respondWith(cacheFirst(request));
     return;
   }
@@ -101,6 +123,7 @@ self.addEventListener('fetch', (event) => {
     fetch(request).catch(() => caches.match(request))
   );
 });
+
 
 // permetti alla pagina di forzare lo skipWaiting
 self.addEventListener('message', (event) => {
