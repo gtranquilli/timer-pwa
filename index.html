@@ -196,8 +196,13 @@
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.warn('SW registration failed:', err);
+    }); 
+  });
 }
+
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
@@ -254,9 +259,13 @@ const Speech = (() => {
   }
 
   function say(text) {
-    const toggle = document.querySelector('#voice-toggle');
-    if (toggle && toggle.value !== 'on') return;
-    if (!('speechSynthesis' in window)) return;
+    const toggle = $('#voice-toggle'); 
+    if (!toggle || toggle.value!=='on') return;
+    if (!('speechSynthesis' in window) || !selectedVoice){
+      // fallback: solo beep breve per non “sparire”
+      beep(880,90);
+      return;
+    }
     const u = new SpeechSynthesisUtterance(String(text));
     if (selectedVoice) u.voice = selectedVoice;
     u.lang = selectedVoice?.lang || preferredLang;
@@ -294,9 +303,9 @@ $('#beep-volume').addEventListener('input', e=>{ ensureAudio(); masterGain.gain.
 
 /* Media helpers */
 /* === Slideshow helpers (multi-image per esercizio) === */
-const SLIDESHOW = { timer:null, idx:0, list:[], interval:2500 };// 2.5s
+const SLIDESHOW = { timer:null, idx:0, list:[], interval:2500 };
 const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
-const VID_EXT = /\.(mp4|webm)$/i;
+const VID_EXT = /\.(mp4|webm)$/i; // niente .mov
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const COUNTDOWN_T = IS_IOS ? 3.6 : 3.1; // un filo prima su iOS
 // --- Normalizzazione URL (stringa/array/CSV) ---
@@ -309,11 +318,11 @@ function toStr(u){
 function splitMaybeList(s){
   const str = toStr(s);
   if (!str) return [];
-  // spezza "a,b,c" -> ["a","b","c"]
   return str.split(',').map(x=>x.trim()).filter(Boolean);
 }
 function isImageUrl(u){ return IMG_EXT.test(toStr(u)); }
 function isVideoUrl(u){ return VID_EXT.test(toStr(u)); }
+
 
 function preloadExerciseImages(ex, max=2){
   if(!ex) return;
@@ -335,7 +344,7 @@ function preloadExerciseImages(ex, max=2){
 }
 
 function stopSlideshow(){
-  if(SLIDESHOW.timer){ clearInterval(SLIDESHOW.timer); SLIDESHOW.timer=null; }
+  if (SLIDESHOW.timer){ clearInterval(SLIDESHOW.timer); SLIDESHOW.timer=null; }
   SLIDESHOW.idx=0; SLIDESHOW.list=[];
 }
 
@@ -344,7 +353,7 @@ function startImageSlideshow(list){
   if(!list || !list.length) return;
   SLIDESHOW.list = list.slice();
   SLIDESHOW.idx = 0;
-  showImage(SLIDESHOW.list[SLIDESHOW.idx]);
+  showImage(SLIDESHOW.list[0]);
   SLIDESHOW.timer = setInterval(()=>{
     if(!SLIDESHOW.list.length) return;
     SLIDESHOW.idx = (SLIDESHOW.idx+1) % SLIDESHOW.list.length;
@@ -352,13 +361,14 @@ function startImageSlideshow(list){
   }, SLIDESHOW.interval);
 }
 
+// Limita tentativi e fermati al primo buco (_1, _2, ... )
 function expandNumberedSeries(seedUrl){
   const seed = splitMaybeList(seedUrl)[0];
   const m = (seed||"").match(/^(.*)_([0-9]+)\.(webp|png|jpe?g)$/i);
   if(!m) return;
   const base = m[1], ext = m[3].toLowerCase();
-  const max = 8;   // limitiamo i tentativi
-  let misses = 0;  // ferma dopo il primo buco per ridurre 404 a raffica
+  const max = 8;   // massimo 8
+  let misses = 0;  // fermati dopo un buco
   for(let n=1; n<=max && misses<1; n++){
     const candidate = `${base}_${n}.${ext}`;
     if (SLIDESHOW.list.includes(candidate)) continue;
@@ -369,7 +379,7 @@ function expandNumberedSeries(seedUrl){
   }
 }
 
-
+const PLACEHOLDER = 'media/placeholder.png';
 // Mostra una "sequenza" per un esercizio: video singolo o slideshow immagini.
 // opts: { rotate: boolean } -> se false, mostra solo la prima immagine
 /* === Slideshow helpers (multi-image per esercizio) === */
@@ -379,22 +389,24 @@ function showExerciseMedia(ex, badge='', opts={}){
   mediaEl.badge.textContent = badge || '';
   const rotate = opts.rotate !== false;
   const prefer = opts.prefer || 'auto';
-  if (!ex){ showMedia(null, badge); return; }
+  if (!ex){ showImage('media/placeholder.png'); return; }
 
-  // --- Normalizza qualsiasi forma di input (stringa/CSV/array) ---
+  // normalizza input
   const raw = [];
   if (Array.isArray(ex.media)) raw.push(...ex.media);
   else if (ex.media)          raw.push(...splitMaybeList(ex.media));
   if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
   const flat = raw.map(toStr).filter(Boolean);
 
-  const videos = flat.filter(u => isVideoUrl(u));
-  let   images = flat.filter(u => isImageUrl(u));
+  const videos = flat.filter(isVideoUrl);
+  let   images = flat.filter(isImageUrl);
   if (!images.length && ex.mediaUrl && isImageUrl(ex.mediaUrl)) images = [toStr(ex.mediaUrl)];
 
+  // se non c'è nulla, placeholder
+  if (!videos.length && !images.length){ showImage('media/placeholder.png'); return; }
+
   function showImages(arr){
-    if (!arr || !arr.length){ showMedia(null, badge); return; }
-    // se il primo è ..._1.webp/jpg prova a espandere ..._2, ..._3
+    if (!arr || !arr.length){ showImage('media/placeholder.png'); return; }
     if (/_\d+\.(webp|png|jpe?g)$/i.test(arr[0])) {
       SLIDESHOW.list = arr.slice();
       if (rotate) startImageSlideshow(SLIDESHOW.list); else showImage(arr[0]);
@@ -405,38 +417,43 @@ function showExerciseMedia(ex, badge='', opts={}){
     }
   }
 
-  // preferenze per modalità
   if (prefer === 'video'  && videos.length){ showVideo(videos[0]); return; }
   if (prefer === 'images' && images.length){ showImages(images);  return; }
-
-  // fallback
   if (videos.length){ showVideo(videos[0]); return; }
   if (images.length){ showImages(images);   return; }
-  showMedia(null, badge);
+  showImage('media/placeholder.png');
 }
+
 
 
 const mediaEl={box:$('#media'),img:$('#media-img'),vid:$('#media-video'),badge:$('#media-badge'),next:$('#media-next')};
-function showImage(src){
-  const url = splitMaybeList(src)[0]; // evita "a,b,c"
-  mediaEl.video.pause(); mediaEl.video.src=''; mediaEl.video.style.display='none';
-  mediaEl.img.style.display='';
-  mediaEl.img.src = url || ''; // stringa sicura
+// -- PATCH robusta: evita CSV/array in src e limita 404
+const PRELOADED = new Set();
+
+
+function preloadImage(src){
+  const url = splitMaybeList(src)[0];
+  if (!url || PRELOADED.has(url)) return;
+  PRELOADED.add(url);
+  const im = new Image(); im.src = url;
 }
+function showImage(src){
+  const url = splitMaybeList(src)[0] || '';
+  try{ mediaEl.vid.pause(); }catch(_){}
+  mediaEl.vid.src=''; mediaEl.vid.style.display='none';
+  mediaEl.img.style.display=''; mediaEl.img.src = url;
+}
+
 function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
 function showMedia(obj,badge=''){ if(!obj||!obj.mediaUrl){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.badge.textContent=badge||''; mediaEl.next.textContent='—'; return; }
   if(obj.mediaUrl.endsWith('.mp4')) showVideo(obj.mediaUrl); else showImage(obj.mediaUrl); mediaEl.badge.textContent=badge||''; }
 function setNextName(name){ mediaEl.next.textContent=name||'—'; }
 
-function preloadImage(src){
-  const url = splitMaybeList(src)[0]; // prendi una sola URL
-  if (!url) return;
-  const im = new Image();
-  im.src = url;
-}
+
 
 /* Dati workout + catalogo */
 let WORKCFG=null, PRESETS_FILE={}, EX_CATALOG=[], activeExercises=[];
+
 fetch('workout.json').then(r=>r.json()).then(data=>{
   WORKCFG=data;
   if(data && data.presets){
@@ -449,7 +466,9 @@ fetch('workout.json').then(r=>r.json()).then(data=>{
       if(!$('#preset').querySelector(`option[value="${k}"]`)){
         const opt=document.createElement('option'); opt.value=k; opt.textContent=p.title||k; $('#preset').appendChild(opt);
       }
-      (p.exercises||[]).forEach(ex=>{ if(!EX_CATALOG.find(e=>e.name===ex.name)) EX_CATALOG.push({name:ex.name, mediaUrl:ex.mediaUrl}); });
+      (p.exercises||[]).forEach(ex=>{
+        if(!EX_CATALOG.find(e=>e.name===ex.name)) EX_CATALOG.push(ex);
+      });
     });
   }
   renderCatalog();
@@ -460,11 +479,17 @@ function renderCatalog(){
   const grid=$('#catalog-grid'); if(!grid) return; grid.innerHTML='';
   EX_CATALOG.forEach(ex=>{
     const card=document.createElement('div'); card.className='ex-card';
-    const img=document.createElement('img'); img.src=ex.mediaUrl; img.alt=ex.name;
+    const srcList = Array.isArray(ex.media) ? ex.media : (ex.mediaUrl ? [ex.mediaUrl] : []);
+    const thumb = srcList[0] || 'media/placeholder.png';
+    const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;   
     const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
     card.appendChild(img); card.appendChild(name); grid.appendChild(card);
-    card.addEventListener('click', ()=>{ $('#tab-timer').click(); showMedia(ex,'Anteprima'); setNextName('—'); Speech.say(ex.name); });
-  });
+    card.addEventListener('click', ()=>{
+    $('#tab-timer').click();
+    showExerciseMedia(ex,'Anteprima',{rotate:true, prefer:'images'});
+    setNextName('—');
+    Speech.say(ex.name);
+  });  });
 }
 
 /* Timer base */
@@ -473,7 +498,14 @@ function resetClock(){ running=false; startStamp=null; totalElapsed=0; clearInte
   $('#display').textContent='00:00'; $('#status').textContent='Pronto'; $('#bar').style.width='0%';
   $('#session-state').textContent='—'; $('#round-state').textContent='—'; $('#ex-state').textContent='—'; $('#elapsed').textContent='00:00'; $('#substatus').textContent=''; }
 function start(){ ensureAudio(); if(!running){ running=true; startStamp=performance.now(); tickHandle=setInterval(tick,100); } }
-function pause(){ if(running){ running=false; clearInterval(tickHandle); } else { start(); } }
+function pause(){
+  if(running){
+    totalElapsed += (performance.now() - startStamp) / 1000; // <— accumula
+    running=false; clearInterval(tickHandle);
+  } else {
+    start();
+  }
+}
 function nextStep(){ if(controller && controller.next) controller.next(); }
 function tick(){ if(controller && controller.update) controller.update(); $('#elapsed').textContent = fmt(totalElapsed + (running ? (performance.now()-startStamp)/1000 : 0)); }
 
@@ -483,12 +515,18 @@ let controller=null;
 class IntervalController{
   constructor(cfg){ this.work=+cfg.work; this.rest=+cfg.rest; this.stations=+cfg.stations; this.rounds=+cfg.rounds; this.br=+cfg.betweenRounds; this.reset(); }
   reset(){ this.mode='work'; this.t=this.work; this.station=1; this.round=1; this.done=false; this.didCountdown=false; resetClock();
+  this._t0=null; this.targetTime = performance.now() + this.t*1000;
+
     $('#session-state').textContent='HIIT Intervalli'; $('#round-state').textContent=`${this.round}/${this.rounds}`; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
     $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t); $('#bar').style.width='0%'; showMedia(null); setNextName('—'); 
   }
 
   update(){ if(!running) return;
-    this.t-=0.1;
+    if (!this._t0) this._t0 = performance.now();
+    if (!this.targetTime) this.targetTime = performance.now() + this.t*1000;
+    const remain = Math.max(0, (this.targetTime - performance.now())/1000);
+    this.t = remain; // <-- ora t è “vero tempo”
+
     $('#display').textContent=fmt(this.t);
     const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
@@ -502,19 +540,43 @@ class IntervalController{
 
     if(this.t<=0){
 
-        if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); this.didCountdown=false; beep(880,120); }
-        else if(this.mode==='rest'){
-          if(this.station<this.stations){ this.station++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120); }
-          else{
-            if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-              if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); }
-              else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); }
-              $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
-            } else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; }
-          }
+      if(this.mode==='work'){
+        this.mode='rest'; this.t=this.rest;
+        this.targetTime = performance.now() + this.t*1000;
+        this.didCountdown=false;
+        $('#status').textContent='Recupero'; Speech.say('Recupero'); beep(880,120);
+      }
+      else if(this.mode==='rest'){
+        if(this.station<this.stations){
+          this.station++; this.mode='work'; this.t=this.work;
+          this.targetTime = performance.now() + this.t*1000;
+          this.didCountdown=false;
+          $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`; beep(1200,120);
         }
-        else if(this.mode==='between')
-        { this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); }
+        else{
+          if(this.round<this.rounds){ this.round++; this.station=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
+            if(this.br>0){
+              this.mode='between'; this.t=this.br;
+              this.targetTime = performance.now() + this.t*1000;
+              this.didCountdown=false;
+              $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150);
+            } else {
+              this.mode='work'; this.t=this.work;
+              this.targetTime = performance.now() + this.t*1000;
+              this.didCountdown=false;
+              $('#status').textContent='Lavoro'; beep(1200,120);
+            }
+            $('#ex-state').textContent=`Stazione ${this.station}/${this.stations}`;
+          } else { this.done=true; running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; }
+        }
+      }
+      else if(this.mode==='between'){
+        this.mode='work'; this.t=this.work;
+        this.targetTime = performance.now() + this.t*1000;
+        this.didCountdown=false;
+        $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120);
+      }
+
     }
   }
   next(){ this.t = 0.01; }
@@ -545,12 +607,18 @@ class CircuitController{
 }
 
   reset(){ this.mode='work'; this.t=this.work; this.ex=1; this.round=1; this.didCountdown=false; resetClock();
+  this._t0=null; this.targetTime = performance.now() + this.t*1000;
+
     $('#session-state').textContent='Circuito'; $('#round-state').textContent=`${this.round}/${this.rounds}`;
     $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; $('#status').textContent='Lavoro'; $('#display').textContent=fmt(this.t);
     this.renderMedia();
   }
   update(){ if(!running) return;
-    this.t-=0.1;
+     if (!this._t0) this._t0 = performance.now();
+    if (!this.targetTime) this.targetTime = performance.now() + this.t*1000;
+    const remain = Math.max(0, (this.targetTime - performance.now())/1000);
+    this.t = remain; // <-- ora t è “vero tempo”
+
     $('#display').textContent=fmt(this.t);
     const max=(this.mode==='work')?this.work:(this.mode==='rest'?this.rest:this.br);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
@@ -561,17 +629,28 @@ class CircuitController{
 
     if(this.t<=0){
       if(this.mode==='work'){
-        this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.nextEx) Speech.say(`Prossimo: ${this.nextEx.name}`); this.didCountdown=false; beep(880,120); this.renderMedia();
+        this.mode='rest'; this.t=this.rest;
+        this.targetTime = performance.now() + this.t*1000;
+        this.didCountdown=false;
+        $('#status').textContent='Recupero'; Speech.say('Recupero');
+        if(this.nextEx) Speech.say(`Prossimo: ${this.nextEx.name}`);
+        beep(880,120); this.renderMedia();
       } else if(this.mode==='rest'){
-        if(this.ex<this.exercises){ this.ex++; this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`; beep(1200,120); this.renderMedia(); }
+        if(this.ex<this.exercises){ 
+          this.ex++; this.mode='work'; this.t=this.work;
+          this.targetTime = performance.now() + this.t*1000;
+          this.didCountdown=false;
+          $('#status').textContent='Lavoro'; $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`;
+          beep(1200,120); this.renderMedia();
+        } 
         else{
           if(this.round<this.rounds){ this.round++; this.ex=1; $('#round-state').textContent=`${this.round}/${this.rounds}`;
-            if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); this.renderMedia(); }
-            else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); this.renderMedia(); }
+            if(this.br>0){ this.mode='between'; this.t=this.br; $('#status').textContent='Recupero tra giri'; Speech.say('Recupero tra giri'); beep(600,150); this.renderMedia();this.targetTime = performance.now() + this.t*1000;this.didCountdown=false; }
+            else{ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; beep(1200,120); this.renderMedia(); this.targetTime = performance.now() + this.t*1000;this.didCountdown=false;}
             $('#ex-state').textContent=`Esercizio ${this.ex}/${this.exercises}`;
           } else { running=false; Speech.say('Sessione completata'); beep(1000,200); beep(1200,200); $('#status').textContent='Completato'; stopSlideshow(); showMedia(null); setNextName('—'); }
         }
-      } else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!'); beep(1200,120); this.renderMedia(); }
+      } else if(this.mode==='between'){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai!');this.targetTime = performance.now() + this.t*1000;this.didCountdown=false; beep(1200,120); this.renderMedia(); }
     }
   }
   next(){ this.t = 0.01; }
@@ -580,24 +659,34 @@ class CircuitController{
 class SetsController{
   constructor(cfg){ this.name=cfg.name||'Esercizio'; this.sets=+cfg.sets; this.rest=+cfg.rest; this.work=Math.max(0,+cfg.work||0); this.advance=cfg.advance||'manual'; this.reset(); }
   reset(){ this.current=1; this.mode=this.work>0 && this.advance==='auto' ? 'work' : 'idle'; this.t=this.mode==='work'?this.work:0; this.didCountdown=false; resetClock();
+  this._t0=null; this.targetTime = this.mode==='work' ? (performance.now() + this.t*1000) : null;
+
     $('#session-state').textContent='Set/Serie'; $('#round-state').textContent=`—`; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
     $('#status').textContent = this.mode==='work' ? 'Lavoro' : 'Pronto'; $('#display').textContent= fmt(this.t); showMedia(null); setNextName('—'); }
   update(){ if(!running) return;
     if(this.mode==='idle') return;
-    this.t-=0.1;
+    if (!this._t0) this._t0 = performance.now();
+    if (!this.targetTime) this.targetTime = performance.now() + this.t*1000;
+    const remain = Math.max(0, (this.targetTime - performance.now())/1000);
+    this.t = remain; // <-- ora t è “vero tempo”
+
     $('#display').textContent=fmt(this.t);
     const max=(this.mode==='work')?Math.max(1,this.work):Math.max(1,this.rest);
     $('#bar').style.width = Math.max(0, Math.min(100, (1 - this.t/max)*100)) + '%';
 
     // --- Countdown PRIMA delle transizioni ---
-    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=3.1){ this.didCountdown=true; Speech.countdown(3); }
+    if ((this.mode==='rest'|| this.mode==='work') && !this.didCountdown && this.t<=COUNTDOWN_T){ this.didCountdown=true; Speech.countdown(3); }
 
     if(this.t<=0){
-        if(this.mode==='work'){ this.mode='rest'; this.t=this.rest; $('#status').textContent='Recupero'; Speech.say('Recupero'); if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
+        if(this.mode==='work'){
+          this.mode='rest'; this.t=this.rest;
+          this.targetTime = performance.now() + this.t*1000;
+          this.didCountdown=false; $('#status').textContent='Recupero'; Speech.say('Recupero'); 
+        if(this.current < this.sets){ Speech.say(`Prossimo: set ${this.current+1}`); } this.didCountdown=false; beep(880,120); }
         else if(this.mode==='rest'){
           if(this.current<this.sets){
             this.current++; $('#ex-state').textContent=`${this.name}: set ${this.current}/${this.sets}`;
-            if(this.advance==='auto' && this.work>0){ this.mode='work'; this.t=this.work; $('#status').textContent='Lavoro'; Speech.say('Vai'); beep(1200,120); }
+            if(this.advance==='auto' && this.work>0){ this.mode='work'; this.t=this.work; this.targetTime = performance.now() + this.t*1000;this.didCountdown=false;$('#status').textContent='Lavoro'; Speech.say('Vai'); beep(1200,120); }
             else { this.mode='idle'; running=false; $('#status').textContent='Pronto (avanza manualmente)'; Speech.say('Pronto'); beep(1200,120); }
           } else { running=false; beep(1000,200); beep(1200,200); Speech.say('Esercizio completato'); $('#status').textContent='Completato'; }
         }
@@ -612,6 +701,7 @@ class SetsController{
 /* Build controller + visibilità */
 function buildControllerFromUI(){
   const mode = $('#mode').value;
+  
   if(mode==='interval'){ controller = new IntervalController({ work: $('#int-work').value, rest: $('#int-rest').value, stations: $('#int-stations').value, rounds: $('#int-rounds').value, betweenRounds: $('#int-between-rounds').value }); }
   else if(mode==='circuit'){ controller = new CircuitController({ exercises: $('#c-exercises').value, work: $('#c-work').value, rest: $('#c-rest').value, rounds: $('#c-rounds').value, betweenRounds: $('#c-between-rounds').value }); }
   else { controller = new SetsController({ name: $('#s-name').value, sets: $('#s-sets').value, rest: $('#s-rest').value, work: $('#s-work').value, advance: $('#s-advance').value }); }
