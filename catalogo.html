@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalogo esercizi</title>
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{ --bg:#0f1115; --panel:#171a21; --accent:#68d391; --accent2:#61dafb; --muted:#a0aec0; --text:#e2e8f0; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#0f1115; color:var(--text); }
+  header{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid #222631; background:#11141b; position:sticky; top:0; }
+  h1{ font-size:18px; margin:0 }
+  a{ color:var(--accent2); text-decoration:none }
+  .wrap{ padding:16px; max-width:1200px; margin:0 auto }
+  .tools{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap }
+  input{ width:280px; max-width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2b3040; background:#0d0f14; color:#e2e8f0; outline:none; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px }
+  .card{ border:1px solid #2b3040; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border-radius:12px; overflow:hidden }
+  .media{ position:relative; width:100%; aspect-ratio:1/1; background:#0b0f15; }
+  .media img,.media video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block }
+  .name{ padding:10px; font-size:13px; color:#c9d2e3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .badge{ position:absolute; left:8px; bottom:8px; font-size:11px; padding:3px 6px; border-radius:999px; border:1px solid #2b3040; background:rgba(15,17,24,.8) }
+  footer{ padding:14px 16px; color:#8693a6; border-top:1px solid #222631; font-size:12px; margin-top:20px }
+</style>
+</head>
+<body>
+<header>
+  <h1>Catalogo esercizi</h1>
+  <div><a href="index.html">← Torna al timer</a></div>
+</header>
+
+<div class="wrap">
+  <div class="tools">
+    <input id="search" type="search" placeholder="Cerca esercizio...">
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>
+  Fonte: <code>workout.json</code>. Se vuoi includere anche media “orfani”, crea <code>media/media-index.json</code> (vedi nota nel codice).
+</footer>
+
+<script>
+// --- Helper
+const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
+const VID_EXT = /\.(mp4|webm)$/i; // niente .mov
+const PLACEHOLDER = 'media/placeholder.png';
+const $ = s => document.querySelector(s);
+function toStr(u){ if(typeof u==='string') return u.trim(); if(Array.isArray(u)) return toStr(u[0]); if(u && typeof u==='object' && 'url' in u) return String(u.url); return u==null?'':String(u); }
+function splitMaybeList(s){ const str=toStr(s); return !str?[]:str.split(',').map(x=>x.trim()).filter(Boolean); }
+function isImageUrl(u){ return IMG_EXT.test(toStr(u)); }
+function isVideoUrl(u){ return VID_EXT.test(toStr(u)); }
+
+function normalizeExercise(ex){
+  // Unifica media[] e/o mediaUrl (string/CSV)
+  const raw = [];
+  if (Array.isArray(ex.media)) raw.push(...ex.media);
+  else if (ex.media)          raw.push(...splitMaybeList(ex.media));
+  if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
+  const flat = raw.map(toStr).filter(Boolean);
+  const imgs = flat.filter(isImageUrl);
+  const vids = flat.filter(isVideoUrl);
+  return { name: ex.name || '(senza nome)', images: imgs, videos: vids, all: flat };
+}
+
+// Facoltativo: indicizza file non presenti nel workout.json
+// Per abilitarlo, genera il file con PowerShell da Windows nella root del progetto:
+//   Get-ChildItem -Path "media" -File | Select-Object -ExpandProperty Name | ConvertTo-Json | Out-File "media/media-index.json" -Encoding utf8
+async function tryLoadMediaIndex(){
+  try {
+    const r = await fetch('media/media-index.json', {cache:'no-store'});
+    if(!r.ok) return [];
+    const arr = await r.json();
+    if(!Array.isArray(arr)) return [];
+    return arr.map(n => 'media/'+n);
+  } catch { return []; }
+}
+
+function filenameBaseName(p){
+  const n = p.split('/').pop();               // file.ext
+  const core = n.replace(/\.[^.]+$/, '');     // file
+  const base = core.replace(/_\d+$/,'');      // file (senza _1/_2)
+  return base;
+}
+function baseToDisplayName(base){
+  return base.replace(/_/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function renderCard(holder, ex){
+  const card = document.createElement('div'); card.className='card';
+  const media = document.createElement('div'); media.className='media';
+  const name  = document.createElement('div'); name.className='name'; name.textContent = ex.name;
+
+  // Mostra priorità: immagine -> video -> placeholder
+  if(ex.images.length){
+    const img = document.createElement('img'); img.src = ex.images[0]; img.alt = ex.name;
+    media.appendChild(img);
+    const b = document.createElement('div'); b.className='badge'; b.textContent = ex.images.length>1 ? `+${ex.images.length-1}` : 'img';
+    media.appendChild(b);
+  } else if(ex.videos.length){
+    const vid = document.createElement('video'); vid.src = ex.videos[0]; vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true;
+    media.appendChild(vid);
+    const b = document.createElement('div'); b.className='badge'; b.textContent = 'video';
+    media.appendChild(b);
+  } else {
+    const img = document.createElement('img'); img.src = PLACEHOLDER; img.alt = ex.name;
+    media.appendChild(img);
+    const b = document.createElement('div'); b.className='badge'; b.textContent = '—';
+    media.appendChild(b);
+  }
+
+  card.appendChild(media); card.appendChild(name);
+  holder.appendChild(card);
+}
+
+async function boot(){
+  const grid = $('#grid');
+  const search = $('#search');
+  // 1) raccogli da workout.json
+  const map = new Map(); // name -> {name, images[], videos[]}
+  try{
+    const data = await fetch('workout.json', {cache:'no-store'}).then(r=>r.json());
+    if(data && data.presets){
+      for(const key of Object.keys(data.presets)){
+        const preset = data.presets[key];
+        (preset.exercises||[]).forEach(ex=>{
+          const k = (ex.name||'').trim();
+          const cur = map.get(k) || { name:k, images:[], videos:[], all:[] };
+          const nrm = normalizeExercise(ex);
+          cur.images.push(...nrm.images); cur.videos.push(...nrm.videos); cur.all.push(...nrm.all);
+          map.set(k, cur);
+        });
+      }
+    }
+  }catch(e){ console.warn('workout.json non caricato', e); }
+
+  // 2) (opzionale) aggiungi media “orfani” se esiste media-index.json
+  const mediaIndex = await tryLoadMediaIndex();
+  if(mediaIndex.length){
+    // raggruppa per base (senza _1/_2, senza estensione)
+    const groups = new Map(); // base -> {images:[], videos:[]}
+    for(const p of mediaIndex){
+      const base = filenameBaseName(p);
+      const g = groups.get(base) || {images:[], videos:[]};
+      (isImageUrl(p) ? g.images : (isVideoUrl(p) ? g.videos : null))?.push(p);
+      groups.set(base, g);
+    }
+    for(const [base, g] of groups){
+      const display = baseToDisplayName(base);
+      if(!map.has(display)){
+        map.set(display, { name: display, images: g.images, videos: g.videos, all:[...g.images, ...g.videos] });
+      }
+    }
+  }
+
+  // 3) render + filtro
+  const all = Array.from(map.values()).sort((a,b)=> a.name.localeCompare(b.name,'it'));
+  function render(list){
+    grid.innerHTML='';
+    list.forEach(ex => renderCard(grid, ex));
+  }
+  render(all);
+
+  search.addEventListener('input', e=>{
+    const q = e.target.value.trim().toLowerCase();
+    if(!q) return render(all);
+    const f = all.filter(ex => ex.name.toLowerCase().includes(q));
+    render(f);
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
