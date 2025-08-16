@@ -60,10 +60,10 @@ function normalizeExercise(ex){
   else if (ex.media)               raw.push(...splitMaybeList(ex.media));
   if (Array.isArray(ex.mediaUrl))  raw.push(...ex.mediaUrl);
   else if (ex.mediaUrl)            raw.push(...splitMaybeList(ex.mediaUrl));
-  const flat  = raw.map(toStr).filter(Boolean);
-  const imgs  = flat.filter(isImageUrl);
-  const vids  = flat.filter(isVideoUrl);
-  return { name: ex.name || '(senza nome)', images: imgs, videos: vids, all: flat };
+  const flat   = raw.map(toStr).filter(Boolean);
+  const images = flat.filter(isImageUrl);
+  const videos = flat.filter(isVideoUrl);
+  return { name: ex.name || '(senza nome)', images, videos, all: flat };
 }
 
 

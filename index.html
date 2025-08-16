@@ -446,10 +446,7 @@ function showImage(src){
   mediaEl.img.style.display=''; mediaEl.img.src = url;
 }
 
-function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none';
-  mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); 
-}
-
+function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
 function showMedia(obj,badge=''){
   mediaEl.badge.textContent = badge || '';
   if(!obj){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.next.textContent='—'; return; }
@@ -462,8 +459,8 @@ function showMedia(obj,badge=''){
   else if (isImageUrl(first)) showImage(first);
   else                        showImage(PLACEHOLDER);
 }
-
 function setNextName(name){ mediaEl.next.textContent=name||'—'; }
+
 
 
 
@@ -494,12 +491,12 @@ fetch('workout.json').then(r=>r.json()).then(data=>{
 function renderCatalog(){
   const grid=$('#catalog-grid'); if(!grid) return; grid.innerHTML='';
   EX_CATALOG.forEach(ex=>{
-  const card=document.createElement('div'); card.className='ex-card';
-  const srcList =
-    Array.isArray(ex.media) ? ex.media :
-    Array.isArray(ex.mediaUrl) ? ex.mediaUrl :
-    (ex.mediaUrl ? String(ex.mediaUrl).split(',').map(s=>s.trim()) : []);
-    const thumb = srcList[0] || 'media/placeholder.png';
+    const card=document.createElement('div'); card.className='ex-card';
+    const srcList =
+      Array.isArray(ex.media) ? ex.media :
+      Array.isArray(ex.mediaUrl) ? ex.mediaUrl :
+      (ex.mediaUrl ? String(ex.mediaUrl).split(',').map(s=>s.trim()) : []);
+    const thumb = srcList.find(u => /\.(webp|png|jpe?g|gif)$/i.test(u||'')) || 'media/placeholder.png';
     const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;
     const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
 
