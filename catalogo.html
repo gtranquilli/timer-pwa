@@ -82,7 +82,20 @@
 <script>
 const IMG_RE = /\.(webp|png|jpe?g|gif)$/i;
 const VID_RE = /\.(mp4|webm)$/i; // niente .mov
-const PLACEHOLDER = 'media/placeholder.png';
+const MEDIA_BASE = 'media/';
+const PLACEHOLDER = MEDIA_BASE + 'placeholder.png';
+const IMG_EXT = /\.(webp|png|jpe?g)$/i;
+const VID_EXT = /\.(mp4|webm)$/i;
+
+function ensureMediaPath(u){
+  if (!u) return PLACEHOLDER;
+  const s = String(u);
+  if (/^https?:/i.test(s)) return s;
+  return s.startsWith(MEDIA_BASE) ? s : (MEDIA_BASE + s.replace(/^\/+/, ''));
+}
+function firstImage(list){ return (list||[]).map(String).find(x => IMG_EXT.test(x)); }
+function firstVideo(list){ return (list||[]).map(String).find(x => VID_EXT.test(x)); }
+
 
 const $ = s => document.querySelector(s);
 
@@ -94,8 +107,7 @@ function mediaList(ex){
   else if (typeof ex.mediaUrl === 'string') a.push(...ex.mediaUrl.split(',').map(s=>s.trim()).filter(Boolean));
   return Array.from(new Set(a)); // dedup
 }
-function firstImage(list){ return list.find(u=>IMG_RE.test(u)) || null; }
-function firstVideo(list){ return list.find(u=>VID_RE.test(u)) || null; }
+
 
 // stato viewer
 const Viewer = {
@@ -190,31 +202,30 @@ function render(){
   $('#count').textContent = `${list.length} esercizi`;
 
   list.forEach(ex=>{
-    const m = ex.media;
+    const m = Array.isArray(ex.media) ? ex.media : (ex.mediaUrl ? [].concat(ex.mediaUrl) : []);
     const img = firstImage(m);
     const vid = firstVideo(m);
-    const thumb = img || PLACEHOLDER;
+    const thumb = ensureMediaPath(img || PLACEHOLDER);
 
     const card = document.createElement('div'); card.className='card';
-    const th = document.createElement('div'); th.className='thumb';
+    const cont = document.createElement('div'); cont.className='thumb';
     const im = document.createElement('img'); im.src = thumb; im.alt = ex.name;
-    th.appendChild(im);
+    cont.appendChild(im); card.appendChild(cont); grid.appendChild(card);
 
-    // anteprima video su hover se c'è un video
     if(vid){
       const pv = document.createElement('video');
-      pv.src = vid; pv.muted = true; pv.loop = true; pv.playsInline = true; pv.style.display='none';
-      th.appendChild(pv);
-      th.addEventListener('mouseenter', ()=>{ pv.style.display='block'; pv.play().catch(()=>{}); });
-      th.addEventListener('mouseleave', ()=>{ pv.pause(); pv.style.display='none'; });
+      pv.src = ensureMediaPath(vid);
+      pv.muted = true; pv.loop = true; pv.playsInline = true; pv.style.display='none';
+      cont.appendChild(pv);
+      cont.addEventListener('mouseenter', ()=>{ pv.style.display='block'; pv.play().catch(()=>{}); });
+      cont.addEventListener('mouseleave', ()=>{ pv.pause(); pv.style.display='none'; });
     }
 
     const name = document.createElement('div'); name.className='name'; name.textContent = ex.name;
+    card.appendChild(name);
 
-    card.appendChild(th); card.appendChild(name); grid.appendChild(card);
-
-    // click -> viewer con tutta la media list (immagini+video, nell’ordine fornito)
-    card.addEventListener('click', ()=> Viewer.openWith(ex.name, ex.media.length? ex.media : [PLACEHOLDER]));
+    // click -> open timer with that media list (images/videos) preloaded
+    card.addEventListener('click', ()=>{ window.location.href = 'index.html#app?ex=' + encodeURIComponent(ex.name); });
   });
 }
 

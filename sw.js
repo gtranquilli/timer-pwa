@@ -42,7 +42,7 @@ async function trimRuntimeCache(maxEntries = MAX_RUNTIME_ENTRIES) {
 }
 
 async function cacheFirst(req) {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(req, { ignoreVary: true });
   if (cached) return cached;
 

@@ -216,9 +216,9 @@ $('#tab-timer').addEventListener('click', ()=>{
   $('#timer-card').style.display=''; $('#catalog').style.display='none';
 });
 $('#tab-catalog').addEventListener('click', ()=>{
-  $('#tab-catalog').classList.add('active'); $('#tab-timer').classList.remove('active');
-  $('#timer-card').style.display='none'; $('#catalog').style.display='';
+  window.location.href = 'catalogo.html';
 });
+
 
 /* Speech robusto (fix iOS: warmup + voce it-IT) */
 const Speech = (() => {
@@ -310,6 +310,14 @@ const IMG_EXT = /\.(webp|png|jpg|jpeg)$/i;
 const VID_EXT = /\.(mp4|webm)$/i; // niente .mov
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const COUNTDOWN_T = IS_IOS ? 3.6 : 3.1; // un filo prima su iOS
+
+const MEDIA_BASE = 'media/';
+function ensureMediaPath(u) {
+  if (!u) return MEDIA_BASE + 'placeholder.png';
+  const s = String(u);
+  if (/^https?:/i.test(s)) return s;                 // absolute URLs
+  return s.startsWith(MEDIA_BASE) ? s : MEDIA_BASE + s.replace(/^\/+/, '');
+}
 // --- Normalizzazione URL (stringa/array/CSV) ---
 function toStr(u){
   if (typeof u === 'string') return u.trim();
@@ -443,13 +451,22 @@ function preloadImage(src){
   const im = new Image(); im.src = url;
 }
 function showImage(src){
-  const url = splitMaybeList(src)[0] || '';
+  const raw = splitMaybeList(src)[0] || '';
+  const url = ensureMediaPath(raw);
   try{ mediaEl.vid.pause(); }catch(_){}
   mediaEl.vid.src=''; mediaEl.vid.style.display='none';
   mediaEl.img.style.display=''; mediaEl.img.src = url;
 }
 
-function showVideo(src){ mediaEl.img.removeAttribute('src'); mediaEl.img.style.display='none'; mediaEl.vid.src=src; mediaEl.vid.style.display='block'; mediaEl.vid.play().catch(()=>{}); }
+function showVideo(src){
+  const raw = splitMaybeList(src)[0] || '';
+  const url = ensureMediaPath(raw);
+  mediaEl.img.removeAttribute('src');
+  mediaEl.img.style.display='none';
+  mediaEl.vid.src = url;
+  mediaEl.vid.style.display='block';
+  mediaEl.vid.play().catch(()=>{});
+}
 function showMedia(obj,badge=''){
   mediaEl.badge.textContent = badge || '';
   if(!obj){ mediaEl.img.style.display='none'; mediaEl.vid.style.display='none'; mediaEl.next.textContent='—'; return; }
@@ -498,15 +515,11 @@ function renderCatalog(){
     const card=document.createElement('div'); card.className='ex-card';
 
     // normalizza: media[] + mediaUrl (stringa/array/CSV)
-    const srcList =
-      Array.isArray(ex.media)     ? ex.media :
-      Array.isArray(ex.mediaUrl)  ? ex.mediaUrl :
-      (ex.mediaUrl ? String(ex.mediaUrl).split(',').map(s=>s.trim()) : []);
+    const srcList = Array.isArray(ex.media) ? ex.media : (ex.mediaUrl ? [].concat(ex.mediaUrl) : []);
+    const firstImg = (srcList || []).find(isImageUrl);
+    const thumb = ensureMediaPath(firstImg || 'media/placeholder.png');
+    const img = document.createElement('img'); img.src = thumb; img.alt = ex.name;
 
-    // thumbnail: prima immagine, altrimenti placeholder
-    const thumb = srcList.find(u => /\.(webp|png|jpe?g|gif)$/i.test(u||'')) || 'media/placeholder.png';
-
-    const img=document.createElement('img'); img.src=thumb; img.alt=ex.name;
     const name=document.createElement('div'); name.className='name'; name.textContent=ex.name;
 
     card.appendChild(img); card.appendChild(name); grid.appendChild(card);
